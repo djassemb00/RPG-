@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-debug-apk:
@@ -41,3 +41,19 @@ jobs:
           name: board-games-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Publish APK to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK_PATH=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          TAG="latest-debug"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK_PATH" --clobber
+          else
+            gh release create "$TAG" "$APK_PATH" \
+              --target "${GITHUB_SHA}" \
+              --title "Board Games Debug APK" \
+              --notes "Automated debug APK build from ${GITHUB_SHA}." \
+              --prerelease
+          fi
