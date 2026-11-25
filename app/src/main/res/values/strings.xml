@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">ألعاب الطاولة</string>
+    <string name="home_title">ألعاب الطاولة</string>
+    <string name="home_subtitle">اختر لعبة وابدأ بالوضع ثنائي أو ثلاثي الأبعاد</string>
+    <string name="play">العب</string>
+    <string name="back">رجوع</string>
+    <string name="mode_2d">2D</string>
+    <string name="mode_3d">3D</string>
+    <string name="board_mode">وضع اللوحة</string>
+    <string name="players">اللاعبون</string>
+    <string name="board_size">حجم اللوحة</string>
+    <string name="demo_notice">نسخة هيكلية تجريبية - جاهزة لتوسيع منطق اللعب.</string>
+</resources>
