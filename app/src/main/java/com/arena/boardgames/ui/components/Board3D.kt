@@ -1,6 +1,5 @@
 package com.arena.boardgames.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -14,21 +13,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import com.arena.boardgames.model.GameType
-import kotlin.math.min
+import com.google.android.filament.Engine
+import io.github.sceneview.Scene
+import io.github.sceneview.loaders.MaterialLoader
+import io.github.sceneview.math.Position
+import io.github.sceneview.math.Rotation
+import io.github.sceneview.math.Size
+import io.github.sceneview.node.CubeNode
+import io.github.sceneview.node.CylinderNode
+import io.github.sceneview.node.Node
+import io.github.sceneview.rememberCameraManipulator
+import io.github.sceneview.rememberCameraNode
+import io.github.sceneview.rememberCollisionSystem
+import io.github.sceneview.rememberEngine
+import io.github.sceneview.rememberMainLightNode
+import io.github.sceneview.rememberMaterialLoader
+import io.github.sceneview.rememberNodes
+import io.github.sceneview.rememberOnGestureListener
+import io.github.sceneview.rememberRenderer
+import io.github.sceneview.rememberScene
+import io.github.sceneview.rememberView
+import io.github.sceneview.math.Color as SceneColor
 
 /**
- * 3D board demo (isometric projection).
- *
- * This skeleton uses a Compose Canvas isometric renderer so it builds reliably
- * without requiring device-specific 3D assets. It can be replaced with a
- * SceneView/Filament implementation for real-time 3D rendering.
+ * Real-time 3D board rendered with SceneView (Filament).
+ * The user can orbit/pan/zoom with touch gestures via [rememberCameraManipulator].
  */
 @Composable
 fun Board3D(
@@ -40,16 +52,44 @@ fun Board3D(
             .fillMaxWidth()
             .aspectRatio(1f)
             .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xFF101418)),
+            .background(Color(0xFF0F141A)),
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            drawIsometricBoard(gameType)
+        val engine = rememberEngine()
+        val materialLoader = rememberMaterialLoader(engine)
+        val view = rememberView(engine)
+        val renderer = rememberRenderer(engine)
+        val scene = rememberScene(engine)
+        val cameraNode = rememberCameraNode(engine) {
+            position = Position(x = 0f, y = 3.8f, z = 5.2f)
+            lookAt(Position(x = 0f, y = 0f, z = 0f))
         }
+        val childNodes = rememberNodes {
+            add(boardBase(engine, materialLoader, gameType))
+            boardTiles(engine, materialLoader, gameType).forEach { add(it) }
+            demoPieces(engine, materialLoader, gameType).forEach { add(it) }
+        }
+
+        Scene(
+            modifier = Modifier.fillMaxSize(),
+            engine = engine,
+            view = view,
+            renderer = renderer,
+            scene = scene,
+            materialLoader = materialLoader,
+            collisionSystem = rememberCollisionSystem(view),
+            mainLightNode = rememberMainLightNode(engine) {
+                intensity = 110_000f
+            },
+            cameraNode = cameraNode,
+            cameraManipulator = rememberCameraManipulator(),
+            childNodes = childNodes,
+            onGestureListener = rememberOnGestureListener(),
+        )
 
         Text(
             text = "3D • ${gameType.displayName}",
             style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.9f),
+            color = Color.White.copy(alpha = 0.92f),
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(12.dp)
@@ -59,119 +99,163 @@ fun Board3D(
     }
 }
 
-private fun DrawScope.drawIsometricBoard(gameType: GameType) {
-    val cx = size.width / 2f
-    val cy = size.height / 2f + size.height * 0.05f
-    val board = min(size.width, size.height) * 0.62f
-    val tile = board / 4f
-    val depth = tile * 0.55f
+private fun boardBase(
+    engine: Engine,
+    materialLoader: MaterialLoader,
+    gameType: GameType,
+): Node = CubeNode(
+    engine = engine,
+    size = Size(x = 4.4f, y = 0.28f, z = 4.4f),
+    materialInstance = materialLoader.createColorInstance(
+        color = gameType.accentColor.toSceneColor(),
+        metallic = 0.1f,
+        roughness = 0.75f,
+        reflectance = 0.25f,
+    ),
+).apply {
+    position = Position(y = -0.14f)
+}
 
-    fun iso(x: Float, y: Float, z: Float = 0f): Offset {
-        // x,y on board plane; z up
-        val ix = (x - y) * 0.82f
-        val iy = (x + y) * 0.48f - z
-        return Offset(cx + ix, cy + iy)
+private fun boardTiles(
+    engine: Engine,
+    materialLoader: MaterialLoader,
+    gameType: GameType,
+): List<Node> {
+    val nodes = mutableListOf<Node>()
+    val boardSize = 4f
+    val divisions = when (gameType) {
+        GameType.CHESS, GameType.CHECKERS -> 8
+        GameType.LUDO -> 6
+        GameType.BACKGAMMON -> 8
     }
+    val tileSize = boardSize / divisions
+    val start = -boardSize / 2f + tileSize / 2f
 
-    // Board top
-    val top = Path().apply {
-        moveTo(iso(-board / 2, -board / 2).x, iso(-board / 2, -board / 2).y)
-        lineTo(iso(board / 2, -board / 2).x, iso(board / 2, -board / 2).y)
-        lineTo(iso(board / 2, board / 2).x, iso(board / 2, board / 2).y)
-        lineTo(iso(-board / 2, board / 2).x, iso(-board / 2, board / 2).y)
-        close()
-    }
-
-    // Sides for depth
-    val rightSide = Path().apply {
-        val p1 = iso(board / 2, -board / 2)
-        val p2 = iso(board / 2, board / 2)
-        val p3 = iso(board / 2, board / 2, -depth)
-        val p4 = iso(board / 2, -board / 2, -depth)
-        moveTo(p1.x, p1.y); lineTo(p2.x, p2.y); lineTo(p3.x, p3.y); lineTo(p4.x, p4.y); close()
-    }
-    val leftSide = Path().apply {
-        val p1 = iso(-board / 2, board / 2)
-        val p2 = iso(board / 2, board / 2)
-        val p3 = iso(board / 2, board / 2, -depth)
-        val p4 = iso(-board / 2, board / 2, -depth)
-        moveTo(p1.x, p1.y); lineTo(p2.x, p2.y); lineTo(p3.x, p3.y); lineTo(p4.x, p4.y); close()
-    }
-
-    drawPath(rightSide, gameType.accentColor.copy(alpha = 0.55f))
-    drawPath(leftSide, gameType.accentColor.copy(alpha = 0.35f))
-    drawPath(top, Color(0xFF2A211B))
-    drawPath(top, Color.White.copy(alpha = 0.12f), style = Stroke(2f))
-
-    // Tiles
-    for (r in 0 until 4) {
-        for (c in 0 until 4) {
-            val x0 = -board / 2 + c * tile
-            val y0 = -board / 2 + r * tile
-            val cell = Path().apply {
-                moveTo(iso(x0, y0).x, iso(x0, y0).y)
-                lineTo(iso(x0 + tile, y0).x, iso(x0 + tile, y0).y)
-                lineTo(iso(x0 + tile, y0 + tile).x, iso(x0 + tile, y0 + tile).y)
-                lineTo(iso(x0, y0 + tile).x, iso(x0, y0 + tile).y)
-                close()
+    for (r in 0 until divisions) {
+        for (c in 0 until divisions) {
+            val dark = (r + c) % 2 == 0
+            val color = if (dark) gameType.darkCell.toSceneColor() else gameType.lightCell.toSceneColor()
+            nodes += CubeNode(
+                engine = engine,
+                size = Size(x = tileSize * 0.96f, y = 0.04f, z = tileSize * 0.96f),
+                materialInstance = materialLoader.createColorInstance(
+                    color = color,
+                    metallic = 0.0f,
+                    roughness = 0.85f,
+                    reflectance = 0.1f,
+                ),
+            ).apply {
+                position = Position(
+                    x = start + c * tileSize,
+                    y = 0.02f,
+                    z = start + r * tileSize,
+                )
             }
-            val isDark = (r + c) % 2 == 0
-            val base = if (isDark) gameType.darkCell else gameType.lightCell
-            drawPath(cell, base.copy(alpha = 0.92f))
-            drawPath(cell, Color.Black.copy(alpha = 0.12f), style = Stroke(1.5f))
         }
     }
+    return nodes
+}
 
-    // Demo pieces
-    val piecePositions = when (gameType) {
-        GameType.CHESS, GameType.CHECKERS -> listOf(
-            -1.5f to -1.5f, -0.5f to -1.5f, 0.5f to -1.5f, 1.5f to -1.5f,
-            -1.5f to 1.5f, -0.5f to 1.5f, 0.5f to 1.5f, 1.5f to 1.5f,
-        )
-        GameType.BACKGAMMON -> listOf(
-            -1.5f to -1.2f, -0.5f to -1.2f, 0.5f to -1.2f, 1.5f to -1.2f,
-            -1.5f to 1.2f, -0.5f to 1.2f, 0.5f to 1.2f, 1.5f to 1.2f,
-        )
-        GameType.LUDO -> listOf(-1.2f to -1.2f, 1.2f to -1.2f, 1.2f to 1.2f, -1.2f to 1.2f)
+private fun demoPieces(
+    engine: Engine,
+    materialLoader: MaterialLoader,
+    gameType: GameType,
+): List<Node> = when (gameType) {
+    GameType.CHESS, GameType.CHECKERS -> checkerPieces(engine, materialLoader, gameType)
+    GameType.BACKGAMMON -> backgammonPieces(engine, materialLoader)
+    GameType.LUDO -> ludoPieces(engine, materialLoader)
+}
+
+private fun checkerPieces(
+    engine: Engine,
+    materialLoader: MaterialLoader,
+    gameType: GameType,
+): List<Node> {
+    val nodes = mutableListOf<Node>()
+    val coords = listOf(-1.5f, -0.5f, 0.5f, 1.5f)
+    val light = SceneColor(0.96f, 0.96f, 0.96f, 1f)
+    val dark = if (gameType == GameType.CHECKERS) {
+        SceneColor(0.90f, 0.22f, 0.21f, 1f)
+    } else {
+        SceneColor(0.15f, 0.17f, 0.20f, 1f)
     }
 
-    piecePositions.forEachIndexed { index, (gx, gy) ->
-        val px = gx * (tile / 2f)
-        val py = gy * (tile / 2f)
-        val color = when (gameType) {
-            GameType.LUDO -> listOf(
-                Color(0xFFD32F2F), Color(0xFF388E3C), Color(0xFFFBC02D), Color(0xFF1976D2)
-            )[index % 4]
-            else -> if (index < piecePositions.size / 2) Color(0xFFF5F5F5) else Color(0xFF263238)
+    coords.forEachIndexed { rIdx, z ->
+        coords.forEach { x ->
+            val pieceColor = if (rIdx < 2) dark else light
+            val radius = if (gameType == GameType.CHECKERS) 0.18f else 0.15f
+            val height = if (gameType == GameType.CHECKERS) 0.08f else 0.22f
+            nodes += CylinderNode(
+                engine = engine,
+                radius = radius,
+                height = height,
+                materialInstance = materialLoader.createColorInstance(
+                    color = pieceColor,
+                    metallic = 0.05f,
+                    roughness = 0.45f,
+                    reflectance = 0.2f,
+                ),
+            ).apply {
+                position = Position(x = x, y = 0.04f + height / 2f, z = z)
+            }
         }
-        drawPiece(iso(px, py), tile * 0.18f, tile * 0.22f, color)
+    }
+    return nodes
+}
+
+private fun backgammonPieces(engine: Engine, materialLoader: MaterialLoader): List<Node> {
+    val nodes = mutableListOf<Node>()
+    val white = SceneColor(0.96f, 0.96f, 0.96f, 1f)
+    val brown = SceneColor(0.30f, 0.20f, 0.15f, 1f)
+    val xs = listOf(-1.5f, -0.9f, -0.3f, 0.3f, 0.9f, 1.5f)
+
+    xs.forEach { x ->
+        for (i in 0 until 3) {
+            val y = 0.04f + 0.035f + i * 0.075f
+            nodes += CylinderNode(
+                engine = engine,
+                radius = 0.13f,
+                height = 0.06f,
+                materialInstance = materialLoader.createColorInstance(white, 0f, 0.55f, 0.2f),
+            ).apply { position = Position(x = x, y = y, z = -1.3f + i * 0.12f) }
+
+            nodes += CylinderNode(
+                engine = engine,
+                radius = 0.13f,
+                height = 0.06f,
+                materialInstance = materialLoader.createColorInstance(brown, 0f, 0.55f, 0.2f),
+            ).apply { position = Position(x = x, y = y, z = 1.3f - i * 0.12f) }
+        }
+    }
+    return nodes
+}
+
+private fun ludoPieces(engine: Engine, materialLoader: MaterialLoader): List<Node> {
+    val colors = listOf(
+        SceneColor(0.83f, 0.18f, 0.18f, 1f),
+        SceneColor(0.22f, 0.56f, 0.24f, 1f),
+        SceneColor(0.98f, 0.75f, 0.18f, 1f),
+        SceneColor(0.10f, 0.46f, 0.82f, 1f),
+    )
+    val positions = listOf(
+        Position(-1.2f, 0.22f, -1.2f),
+        Position(1.2f, 0.22f, -1.2f),
+        Position(1.2f, 0.22f, 1.2f),
+        Position(-1.2f, 0.22f, 1.2f),
+    )
+    return positions.zip(colors).map { (pos, color) ->
+        CylinderNode(
+            engine = engine,
+            radius = 0.16f,
+            height = 0.36f,
+            materialInstance = materialLoader.createColorInstance(
+                color = color,
+                metallic = 0.05f,
+                roughness = 0.45f,
+                reflectance = 0.2f,
+            ),
+        ).apply { position = pos }
     }
 }
 
-private fun DrawScope.drawPiece(center: Offset, radius: Float, height: Float, color: Color) {
-    // Shadow
-    drawOval(
-        color = Color.Black.copy(alpha = 0.25f),
-        topLeft = Offset(center.x - radius, center.y - radius * 0.45f + 3f),
-        size = androidx.compose.ui.geometry.Size(radius * 2, radius * 0.9f),
-    )
-    // Body
-    drawRect(
-        color = color.copy(alpha = 0.85f),
-        topLeft = Offset(center.x - radius, center.y - height),
-        size = androidx.compose.ui.geometry.Size(radius * 2, height),
-    )
-    // Top
-    drawOval(
-        color = color,
-        topLeft = Offset(center.x - radius, center.y - height - radius * 0.45f),
-        size = androidx.compose.ui.geometry.Size(radius * 2, radius * 0.9f),
-    )
-    // Bottom rim
-    drawOval(
-        color = Color.Black.copy(alpha = 0.15f),
-        topLeft = Offset(center.x - radius, center.y - radius * 0.45f),
-        size = androidx.compose.ui.geometry.Size(radius * 2, radius * 0.9f),
-        style = Stroke(1.5f),
-    )
-}
+private fun Color.toSceneColor(): SceneColor = SceneColor(red, green, blue, alpha)
