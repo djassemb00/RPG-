@@ -11,7 +11,7 @@
   - الداما
 - شاشة لعبة مع مفتاح تبديل بين وضع **2D** و **3D**.
 - عرض 2D مرسوم بـ Compose Canvas (لوحة تجريبية لكل لعبة).
-- عرض 3D تجريبي باستخدام [SceneView](https://github.com/SceneView/sceneview-android) / Filament بعقد ثلاثية أبعاد إجرائية بسيطة.
+- عرض 3D تجريبي بأسلوب إسقاط متساوي القياس (Isometric) عبر Canvas، مع إمكانية استبداله لاحقًا بمحرك SceneView/Filament.
 - بنية قابلة للتوسع لإضافة منطق اللعب، الذكاء الاصطناعي، اللعب الجماعي، وحفظ الحالة.
 
 ## التقنيات
@@ -20,7 +20,7 @@
 - Jetpack Compose (Material 3)
 - Navigation Compose
 - Lifecycle ViewModel
-- SceneView (`io.github.sceneview:sceneview`) لوضع 3D
+- عرض Isometric 3D عبر Canvas (قابل للترقية إلى SceneView/Filament)
 
 ## هيكل المشروع
 
