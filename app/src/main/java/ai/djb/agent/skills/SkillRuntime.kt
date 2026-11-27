@@ -15,7 +15,7 @@ class SkillRuntime(private val ctx: ToolContext) {
 
     private val placeholder = Regex("\\{\\{\\s*([A-Za-z0-9_.\\-]+)\\s*}}")
 
-    fun run(
+    suspend fun run(
         skill: Skill,
         params: JSONObject,
         invoke: suspend (SkillStep) -> String,
@@ -27,8 +27,13 @@ class SkillRuntime(private val ctx: ToolContext) {
             val resolvedArgs = resolve(rawStep.args, params, captured)
             val step = rawStep.copy(args = resolvedArgs)
 
-            val result = runCatching { invoke(step) }
-                .getOrElse { e -> "ERROR: ${e.message}" }
+            val result = try {
+                invoke(step)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                "ERROR: ${e.message}"
+            }
 
             log.append("[$index] ${step.tool} ${resolvedArgs.toString().take(200)} → ")
             log.append(result.take(400))
