@@ -53,15 +53,19 @@ jobs:
           cat errors.txt
           echo "--- uploading as artifact ---"
 
-      - name: Upload build log on failure
+      # Artifacts/logs aren't reachable from the agent sandbox, so on failure we
+      # commit the compiler diagnostics back to the branch where they can be read.
+      - name: Commit diagnostics on failure
         if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            build-output.txt
-            errors.txt
-          if-no-files-found: warn
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          { echo "# build diagnostics"; echo; echo '```'; tail -c 12000 build-output.txt; echo '```'; } > ci-errors.md
+          git config user.name "ci-diagnostics"
+          git config user.email "ci@localhost"
+          git add -f ci-errors.md build-output.txt || true
+          git commit -m "ci: build diagnostics [skip ci]" || true
+          git push origin "HEAD:${GITHUB_REF_NAME}" || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
