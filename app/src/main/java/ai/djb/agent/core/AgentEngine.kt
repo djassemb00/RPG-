@@ -66,8 +66,13 @@ class AgentEngine(
     }
 
     private suspend fun runInternal(task: String) {
-        if (!settings.isConfigured) {
-            bus.emit(AgentEvent.Log("الإعدادات ناقصة: ضع مفتاح API واسم الموديل أولًا.", LogLevel.ERROR))
+        if (!client.hasUsableProvider()) {
+            bus.emit(
+                AgentEvent.Log(
+                    "لا يوجد مزوّد مضبوط: أضف مفتاحًا واحدًا على الأقل في الإعدادات ← المزوّدون.",
+                    LogLevel.ERROR,
+                )
+            )
             bus.emit(AgentEvent.RunningChanged(false))
             return
         }

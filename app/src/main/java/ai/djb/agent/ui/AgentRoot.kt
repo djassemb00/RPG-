@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Terminal
@@ -41,7 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, SETTINGS, LOGS }
+private enum class Tab { CHAT, SKILLS, PROVIDERS, SETTINGS, LOGS }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,6 +99,12 @@ fun AgentRoot(app: AgentApp) {
                     label = { Text("المهارات") },
                 )
                 NavigationBarItem(
+                    selected = tab == Tab.PROVIDERS,
+                    onClick = { tab = Tab.PROVIDERS },
+                    icon = { Icon(Icons.Filled.Cloud, contentDescription = null) },
+                    label = { Text("المزوّدون") },
+                )
+                NavigationBarItem(
                     selected = tab == Tab.SETTINGS,
                     onClick = { tab = Tab.SETTINGS },
                     icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
@@ -132,12 +139,19 @@ fun AgentRoot(app: AgentApp) {
                     state = state,
                     onChanged = { settingsVersion++ },
                 )
-                Tab.SETTINGS -> SettingsScreen(
+                Tab.PROVIDERS -> ProvidersScreen(
                     state = state,
-                    onSaveConnection = { base, key, model ->
-                        vm.saveConnection(base, key, model)
+                    onAdd = { id, label, base, model, key ->
+                        vm.addOrUpdateProvider(id, label, base, model, key)
                         settingsVersion++
                     },
+                    onRemove = { id, label -> vm.removeProvider(id, label); settingsVersion++ },
+                    onToggle = { id, on -> vm.setProviderEnabled(id, on); settingsVersion++ },
+                    onMove = { id, up -> vm.moveProvider(id, up); settingsVersion++ },
+                    onTest = { id -> vm.testProvider(id) },
+                )
+                Tab.SETTINGS -> SettingsScreen(
+                    state = state,
                     onSaveBehaviour = { name, autonomy, selfImprove, steps, extra ->
                         vm.saveBehaviour(name, autonomy, selfImprove, steps, extra)
                         settingsVersion++

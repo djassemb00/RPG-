@@ -5,6 +5,7 @@ import ai.djb.agent.core.EventBus
 import ai.djb.agent.core.JsonStore
 import ai.djb.agent.core.LlmClient
 import ai.djb.agent.core.PermissionBroker
+import ai.djb.agent.core.ProviderRegistry
 import ai.djb.agent.core.SettingsStore
 import ai.djb.agent.core.ToolContext
 import ai.djb.agent.core.ToolRegistry
@@ -29,6 +30,8 @@ class AgentApp : Application() {
         private set
     lateinit var registry: ToolRegistry
         private set
+    lateinit var providers: ProviderRegistry
+        private set
     lateinit var client: LlmClient
         private set
     lateinit var engine: AgentEngine
@@ -43,7 +46,8 @@ class AgentApp : Application() {
         bus = EventBus()
         permissions = PermissionBroker(bus)
         shell = ShellBridge(this)
-        client = LlmClient(settings)
+        providers = ProviderRegistry(store).also { it.migrateLegacySettings(settings) }
+        client = LlmClient(settings, providers, bus)
 
         val context = ToolContext(this, store, settings, permissions, bus, shell)
         registry = ToolRegistry(context)

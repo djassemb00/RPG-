@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
@@ -28,32 +27,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import ai.djb.agent.core.Autonomy
-
-private data class Provider(val label: String, val base: String, val model: String)
-
-private val providers = listOf(
-    Provider("OpenAI", "https://api.openai.com/v1", "gpt-4o-mini"),
-    Provider("OpenRouter", "https://openrouter.ai/api/v1", "google/gemini-2.0-flash-001"),
-    Provider("Groq", "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
-    Provider("DeepSeek", "https://api.deepseek.com/v1", "deepseek-chat"),
-    Provider("Gemini (compat)", "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.0-flash"),
-    Provider("Ollama (LAN)", "http://192.168.1.10:11434/v1", "qwen2.5:7b"),
-)
 
 @Composable
 fun SettingsScreen(
     state: UiState,
-    onSaveConnection: (String, String, String) -> Unit,
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
-    var baseUrl by remember(state.apiBaseUrl) { mutableStateOf(state.apiBaseUrl) }
-    var apiKey by remember { mutableStateOf("") }
-    var model by remember(state.model) { mutableStateOf(state.model) }
-
     var name by remember(state.agentName) { mutableStateOf(state.agentName) }
     var autonomy by remember(state.autonomy) { mutableStateOf(state.autonomy) }
     var selfImprove by remember(state.selfImprove) { mutableStateOf(state.selfImprove) }
@@ -67,73 +49,24 @@ fun SettingsScreen(
         item {
             Text("المزوّد والموديل", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
             Text(
-                "يُخزَّن المفتاح داخل تخزين التطبيق الخاص فقط ولا يُرسل لأي جهة غير المزوّد.",
+                "أُنتقلت إدارة المزوّدات إلى تبويب «المزوّدون» (مع التبديل التلقائي).",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                providers.take(3).forEach { p ->
-                    AssistChip(
-                        onClick = { baseUrl = p.base; model = p.model },
-                        label = { Text(p.label, style = MaterialTheme.typography.labelSmall) },
+            SectionCard {
+                MonoLabel("سلسلة الطلب الحالية")
+                Text(state.providerChain, fontWeight = FontWeight.SemiBold)
+                if (!state.configured) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "لا مزوّد مضبوط بعد — أضف واحدًا من تبويب المزوّدين.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }
-        }
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                providers.drop(3).forEach { p ->
-                    AssistChip(
-                        onClick = { baseUrl = p.base; model = p.model },
-                        label = { Text(p.label, style = MaterialTheme.typography.labelSmall) },
-                    )
-                }
-            }
-        }
-
-        item {
-            OutlinedTextField(
-                value = baseUrl,
-                onValueChange = { baseUrl = it },
-                label = { Text("Base URL") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text(if (state.hasApiKey) "API Key (محفوظ — اكتب لاستبداله)" else "API Key") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
-            OutlinedTextField(
-                value = model,
-                onValueChange = { model = it },
-                label = { Text("Model") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        item {
-            Button(
-                onClick = { onSaveConnection(baseUrl, apiKey, model); apiKey = "" },
-                modifier = Modifier.fillMaxWidth(),
-            ) { Text("حفظ الاتصال") }
         }
 
         item { Spacer(Modifier.height(12.dp)) }

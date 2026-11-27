@@ -4,6 +4,7 @@ import ai.djb.agent.AgentApp
 import ai.djb.agent.core.AgentEvent
 import ai.djb.agent.core.Autonomy
 import ai.djb.agent.core.LogLevel
+import ai.djb.agent.core.ProviderSlot
 import ai.djb.agent.core.Risk
 import ai.djb.agent.services.AgentAccessibilityService
 import androidx.lifecycle.ViewModel
@@ -26,6 +27,19 @@ data class FeedItem(
     val at: String = "",
 )
 
+data class ProviderSlotView(
+    val presetId: String,
+    val label: String,
+    val baseUrl: String,
+    val model: String,
+    val configured: Boolean,
+    val enabled: Boolean,
+    val hasKey: Boolean,
+    val successCount: Int,
+    val failCount: Int,
+    val lastError: String?,
+)
+
 data class PendingConfirmation(val id: Long, val tool: String, val args: String, val risk: Risk)
 
 data class UiState(
@@ -45,6 +59,10 @@ data class UiState(
     val skillsCount: Int = 0,
     val memoryCount: Int = 0,
     val rulesCount: Int = 0,
+    val providers: List<ProviderSlotView> = emptyList(),
+    val providerChain: String = "",
+    val providerTesting: String? = null,
+    val providerTestResult: String? = null,
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -79,6 +97,22 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             skillsCount = app.store.readSkills().size,
             memoryCount = app.store.readMemory().size,
             rulesCount = app.store.readRules().size,
+            providers = app.providers.load().map { slot ->
+                ProviderSlotView(
+                    presetId = slot.presetId,
+                    label = slot.label,
+                    baseUrl = slot.baseUrl,
+                    model = slot.model,
+                    configured = slot.configured,
+                    enabled = slot.enabled,
+                    hasKey = slot.key.isNotBlank(),
+                    successCount = slot.successCount,
+                    failCount = slot.failCount,
+                    lastError = slot.lastError,
+                )
+            },
+            providerChain = app.client.describeChain(),
+            configured = app.client.hasUsableProvider(),
         )
     }
 
@@ -163,11 +197,49 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
 
     // ---- settings actions ----
 
-    fun saveConnection(baseUrl: String, apiKey: String, model: String) {
-        if (baseUrl.isNotBlank()) app.settings.apiBaseUrl = baseUrl
-        if (apiKey.isNotBlank()) app.settings.apiKey = apiKey
-        if (model.isNotBlank()) app.settings.model = model
-        userPrefsSaved()
+    // ---- provider chain ----
+
+    fun addOrUpdateProvider(presetId: String, label: String, baseUrl: String, model: String, key: String) {
+        val existing = app.providers.load().firstOrNull { it.presetId == presetId }
+        app.providers.upsert(
+            ProviderSlot(
+                presetId = presetId,
+                label = label,
+                baseUrl = baseUrl.trim(),
+                model = model.trim(),
+                key = key.trim().ifBlank { existing?.key.orEmpty() },
+                enabled = true,
+                priority = existing?.priority ?: app.providers.load().size,
+            )
+        )
+        refreshSettings()
+        system("تم حفظ مزوّد $label. سلسلة الطلب: ${app.client.describeChain()}")
+    }
+
+    fun removeProvider(presetId: String, label: String) {
+        app.providers.remove(presetId)
+        refreshSettings()
+        system("حُذف مزوّد $label.")
+    }
+
+    fun setProviderEnabled(presetId: String, enabled: Boolean) {
+        app.providers.setEnabled(presetId, enabled)
+        refreshSettings()
+    }
+
+    fun moveProvider(presetId: String, up: Boolean) {
+        app.providers.move(presetId, up)
+        refreshSettings()
+    }
+
+    fun testProvider(presetId: String) {
+        val slot = app.providers.load().firstOrNull { it.presetId == presetId } ?: return
+        _state.value = _state.value.copy(providerTesting = presetId, providerTestResult = null)
+        viewModelScope.launch {
+            val result = app.client.testProvider(slot)
+            _state.value = _state.value.copy(providerTesting = null, providerTestResult = result)
+            system(result)
+        }
     }
 
     fun saveBehaviour(name: String, autonomy: Autonomy, selfImprove: Boolean, maxSteps: Int, extra: String) {
