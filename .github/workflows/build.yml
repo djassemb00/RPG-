@@ -42,7 +42,26 @@ jobs:
           ls "$ANDROID_SDK_ROOT/platforms" || true
 
       - name: Build debug APK
-        run: gradle :app:assembleDebug --stacktrace --no-daemon
+        run: |
+          set -o pipefail
+          gradle :app:assembleDebug --stacktrace --no-daemon 2>&1 | tee build-output.txt
+
+      - name: Capture compiler errors
+        if: failure()
+        run: |
+          { grep -E "^(e|w): |error:|FAILURE|What went wrong" -A3 build-output.txt || true; } > errors.txt
+          cat errors.txt
+          echo "--- uploading as artifact ---"
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: |
+            build-output.txt
+            errors.txt
+          if-no-files-found: warn
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

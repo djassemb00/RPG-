@@ -1,5 +1,6 @@
 package ai.djb.agent.core
 
+import ai.djb.agent.tools.ShellBridge
 import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject

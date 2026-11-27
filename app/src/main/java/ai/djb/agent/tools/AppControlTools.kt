@@ -8,6 +8,7 @@ import android.content.Intent
 import android.provider.AlarmClock
 import android.provider.ContactsContract
 import android.provider.MediaStore
+import android.provider.Settings
 import org.json.JSONObject
 
 class AppControlTools {
