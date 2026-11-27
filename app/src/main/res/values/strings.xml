@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">djb ai</string>
+    <string name="accessibility_label">djb ai — التحكم في الجهاز</string>
+    <string name="accessibility_description">تسمح هذه الخدمة للمساعد بقراءة الشاشة والنقر والكتابة نيابةً عنك عند طلبك. لا يعمل المساعد دون تفعيلها.</string>
+</resources>
