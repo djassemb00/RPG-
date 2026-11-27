@@ -84,7 +84,6 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
     fun refreshSettings() {
         val s = app.settings
         _state.value = _state.value.copy(
-            configured = s.isConfigured,
             apiBaseUrl = s.apiBaseUrl,
             model = s.model,
             hasApiKey = s.apiKey.isNotBlank(),

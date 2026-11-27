@@ -165,8 +165,10 @@ class ProviderRegistry(private val store: JsonStore) {
         return load()
     }
 
-    fun setEnabled(presetId: String, enabled: Boolean): List<ProviderSlot> =
+    fun setEnabled(presetId: String, enabled: Boolean): List<ProviderSlot> {
         save(load().map { if (it.presetId == presetId) it.copy(enabled = enabled) else it })
+        return load()
+    }
 
     fun move(presetId: String, up: Boolean): List<ProviderSlot> {
         val list = load().toMutableList()

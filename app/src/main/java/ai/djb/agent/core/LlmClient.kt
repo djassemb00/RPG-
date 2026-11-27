@@ -20,7 +20,7 @@ data class LlmResponse(
 )
 
 /** The attempt to reach one provider didn't work; the router may try the next. */
-private class AttemptFailed(val message: String, val retryable: Boolean) : Exception(message)
+private class AttemptFailed(override val message: String, val retryable: Boolean) : Exception(message)
 
 /**
  * Routes chat calls across an ordered chain of providers.
