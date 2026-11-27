@@ -20,57 +20,48 @@ Daemon will be stopped at the end of the build
 > Task :app:compileDebugShaders NO-SOURCE
 > Task :app:generateDebugAssets UP-TO-DATE
 > Task :app:mergeDebugAssets
+> Task :app:processDebugManifestForPackage
 > Task :app:compressDebugAssets
 > Task :app:desugarDebugFileDependencies
-> Task :app:mergeDebugJniLibFolders
-> Task :app:checkDebugDuplicateClasses
-> Task :app:mergeDebugNativeLibs
-> Task :app:processDebugManifestForPackage
-> Task :app:mergeExtDexDebug
-> Task :app:mergeLibDexDebug
-
-> Task :app:stripDebugDebugSymbols
-Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so.
-
 > Task :app:processDebugResources
-> Task :app:validateSigningDebug
-> Task :app:writeDebugAppMetadata
-> Task :app:writeDebugSigningConfigVersions
+> Task :app:checkDebugDuplicateClasses
 
+> Task :app:compileDebugKotlin
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:167:27 Syntax error: Property getter or setter expected.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:17 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:18 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:21 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:22 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:23 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:31 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:32 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:34 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:37 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:38 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:42 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:43 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:52 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:53 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:54 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:55 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:58 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:59 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:60 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:66 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:67 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:68 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:168:69 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:169:13 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:169:18 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:169:20 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:169:24 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:169:25 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:169:31 Syntax error: Expecting member declaration.
+e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/tools/AccessibilityTools.kt:170:9 Syntax error: Expecting member declaration.
+
+> Task :app:mergeExtDexDebug
 > Task :app:compileDebugKotlin FAILED
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:212:41 Unresolved reference 'weight'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:221:9 Unresolved reference 'item'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:222:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:223:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:223:55 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:224:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:226:39 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:227:39 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:231:9 Unresolved reference 'items'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:231:37 Cannot infer type for this parameter. Please specify it explicitly.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:232:71 Unresolved reference 'id'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:233:13 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:236:37 Unresolved reference 'label'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:237:42 Unresolved reference 'freeTier'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:251:9 Unresolved reference 'item'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:251:16 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:5 Syntax error: Expecting a top level declaration.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:12 Syntax error: Expecting a top level declaration.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:14 Syntax error: Expecting a top level declaration.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:18 Syntax error: Expecting a top level declaration.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:18 Functions which invoke @Composable functions must be marked with the @Composable annotation
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:18 Function declaration must have a name.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:20 Unresolved reference 'preset'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:254:27 Syntax error: Unexpected tokens (use ';' to separate expressions on the same line).
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:255:9 @Composable invocations can only happen from the context of a @Composable function
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:256:22 Unresolved reference 'preset'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:257:27 Unresolved reference 'editing'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:259:17 Unresolved reference 'onAdd'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:259:23 Unresolved reference 'preset'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:259:34 Unresolved reference 'preset'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:260:17 Unresolved reference 'editing'.
-e: file:///home/runner/work/RPG-/RPG-/app/src/main/java/ai/djb/agent/ui/ProvidersScreen.kt:264:1 Syntax error: Expecting a top level declaration.
-gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1795803138737.json
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_3-1795803980178.json
 
 FAILURE: Build failed with an exception.
 
@@ -115,35 +106,6 @@ org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:com
 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
-	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:138)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:123)
-	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
-	at org.gradle.execution.DryRunBuildExecutionAction.execute(DryRunBuildExecutionAction.java:51)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
-	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
-	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
-	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
-	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:44)
-	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
-	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
-	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:267)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:131)
-	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
-	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
-	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
-	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
-	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
 Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
@@ -273,35 +235,6 @@ Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionExcept
 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
-	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:138)
-	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:123)
-	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
-	at org.gradle.execution.DryRunBuildExecutionAction.execute(DryRunBuildExecutionAction.java:51)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:209)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:204)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:66)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:166)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:59)
-	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:53)
-	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
-	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
-	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
-	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
-	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:44)
-	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
-	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
-	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:267)
-	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:131)
-	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
-	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
-	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
-	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
-	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
 Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
@@ -337,5 +270,5 @@ Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilat
 	... 2 more
 
 
-BUILD FAILED in 3m 9s
-28 actionable tasks: 28 executed
+BUILD FAILED in 2m 22s
+21 actionable tasks: 21 executed
