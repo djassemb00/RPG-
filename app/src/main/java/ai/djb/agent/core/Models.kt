@@ -10,6 +10,8 @@ data class ToolCall(
     val id: String,
     val name: String,
     val arguments: JSONObject,
+    /** The provider's own argument text; echoed back verbatim so the model sees consistency. */
+    val rawArguments: String = arguments.toString(),
 )
 
 data class ChatMessage(
@@ -32,7 +34,7 @@ data class ChatMessage(
                             put("type", "function")
                             put("function", JSONObject().apply {
                                 put("name", call.name)
-                                put("arguments", call.arguments.toString())
+                                put("arguments", call.rawArguments)
                             })
                         })
                     }
@@ -63,7 +65,7 @@ enum class Risk { LOW, MEDIUM, HIGH }
 data class ToolSpec(
     val name: String,
     val description: String,
-    val parameters: JSONObject = JSONObject().put("type", "object").put("properties", JSONObject()),
+    val parameters: JSONObject = JSONObject(),
     val risk: Risk = Risk.LOW,
 ) {
     fun toOpenAi(): JSONObject = JSONObject().apply {
@@ -71,10 +73,111 @@ data class ToolSpec(
         put("function", JSONObject().apply {
             put("name", name)
             put("description", description)
-            put("parameters", parameters)
+            // Normalised on the way out: providers validate the schema strictly.
+            put("parameters", SchemaSanitizer.sanitize(parameters))
         })
     }
 }
+
+/**
+ * Some providers (Groq especially) validate every tool schema against the JSON
+ * Schema metaschema and reject the whole request with HTTP 400 otherwise. A single
+ * property carrying `enum` without `type` — or an object with `properties` but no
+ * `type` — is enough to fail. Instead of trusting 40 hand-written schemas, every
+ * one of them is normalised here, once, before it goes on the wire.
+ */
+object SchemaSanitizer {
+
+    fun sanitize(raw: JSONObject): JSONObject {
+        val root = deepCopy(raw)
+        if (root.optString("type").isBlank()) root.put("type", "object")
+        if (root.optString("type") == "object" && !root.has("properties")) {
+            root.put("properties", JSONObject())
+        }
+        root.optJSONObject("properties")?.let { props ->
+            val names = props.keys()
+            while (names.hasNext()) {
+                val key = names.next()
+                props.optJSONObject(key)?.let { props.put(key, sanitizeProperty(it)) }
+            }
+        }
+        root.optJSONArray("required")?.let { req ->
+            val cleaned = JSONArray()
+            for (i in 0 until req.length()) {
+                req.optString(i).takeIf { it.isNotBlank() }?.let { cleaned.put(it) }
+            }
+            root.put("required", cleaned)
+        }
+        return root
+    }
+
+    private fun sanitizeProperty(spec: JSONObject): JSONObject {
+        val out = deepCopy(spec)
+        val hasEnum = out.has("enum")
+        if (out.optString("type").isBlank()) out.put("type", "string")
+        if (hasEnum) {
+            val values = out.optJSONArray("enum")
+            val cleaned = JSONArray()
+            if (values != null) {
+                for (i in 0 until values.length()) {
+                    when (val v = values.opt(i)) {
+                        null -> Unit
+                        is String -> cleaned.put(v)
+                        else -> cleaned.put(v.toString())
+                    }
+                }
+            }
+            out.put("enum", cleaned)
+        }
+        out.optJSONObject("items")?.let { out.put("items", sanitizeProperty(it)) }
+        out.optJSONObject("properties")?.let { nested ->
+            val names = nested.keys()
+            while (names.hasNext()) {
+                val key = names.next()
+                nested.optJSONObject(key)?.let { nested.put(key, sanitizeProperty(it)) }
+            }
+        }
+        if (out.optString("type") == "object" && !out.has("properties")) {
+            out.put("properties", JSONObject())
+        }
+        return out
+    }
+
+    private fun deepCopy(src: JSONObject): JSONObject {
+        val out = JSONObject()
+        val keys = src.keys()
+        while (keys.hasNext()) {
+            val key = keys.next()
+            when (val value = src.opt(key)) {
+                is JSONObject -> out.put(key, deepCopy(value))
+                is JSONArray -> {
+                    val arr = JSONArray()
+                    for (i in 0 until value.length()) {
+                        val item = value.opt(i)
+                        if (item is JSONObject) arr.put(deepCopy(item)) else arr.put(item)
+                    }
+                    out.put(key, arr)
+                }
+                null -> Unit
+                else -> out.put(key, value)
+            }
+        }
+        return out
+    }
+}
+
+/**
+ * Builds a JSON Schema fragment for one parameter and guarantees it contains a
+ * `type`. Prefer this over `listOf(...)` for `enum` fields.
+ */
+internal fun prop(type: String, description: String? = null, enumValues: List<String>? = null): JSONObject =
+    JSONObject().apply {
+        put("type", type)
+        if (!enumValues.isNullOrEmpty()) {
+            put("enum", JSONArray().apply { enumValues.forEach { put(it) } })
+        }
+        if (!description.isNullOrBlank()) put("description", description)
+    }
 
 /** Everything a tool is allowed to touch. No tool gets more than this. */
 class ToolContext(

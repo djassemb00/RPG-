@@ -4,6 +4,7 @@ import ai.djb.agent.core.AgentTool
 import ai.djb.agent.core.Risk
 import ai.djb.agent.core.ToolContext
 import ai.djb.agent.core.ToolSpec
+import ai.djb.agent.core.prop
 import android.content.Intent
 import android.provider.AlarmClock
 import android.provider.ContactsContract
@@ -196,7 +197,7 @@ class AppControlTools {
             parameters = JSONObject()
                 .put("type", "object")
                 .put("properties", JSONObject()
-                    .put("action", JSONObject().put("type", "string").put("enum", listOf("play", "pause", "next", "previous"))))
+                    .put("action", prop("string", "إجراء الوسائط", listOf("play", "pause", "next", "previous"))))
                 .put("required", org.json.JSONArray().put("action")),
             risk = Risk.LOW,
         )
@@ -254,7 +255,7 @@ class AppControlTools {
             parameters = JSONObject()
                 .put("type", "object")
                 .put("properties", JSONObject()
-                    .put("target", JSONObject().put("type", "string").put("enum", listOf("wifi", "bluetooth", "airplane")))
+                    .put("target", prop("string", "ما يُفتح", listOf("wifi", "bluetooth", "airplane")))
                     .put("enable", JSONObject().put("type", "boolean")))
                 .put("required", org.json.JSONArray().put("target").put("enable")),
             risk = Risk.HIGH,
@@ -297,7 +298,7 @@ class AppControlTools {
             parameters = JSONObject()
                 .put("type", "object")
                 .put("properties", JSONObject()
-                    .put("mode", JSONObject().put("type", "string").put("enum", listOf("list", "insert"))))
+                    .put("mode", prop("string", "list أو insert", listOf("list", "insert"))))
                 .put("required", org.json.JSONArray().put("mode")),
             risk = Risk.LOW,
         )

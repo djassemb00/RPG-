@@ -4,6 +4,7 @@ import ai.djb.agent.core.AgentTool
 import ai.djb.agent.core.Risk
 import ai.djb.agent.core.ToolContext
 import ai.djb.agent.core.ToolSpec
+import ai.djb.agent.core.prop
 import ai.djb.agent.services.AgentAccessibilityService
 import org.json.JSONObject
 
@@ -143,7 +144,7 @@ class AccessibilityTools {
             parameters = JSONObject()
                 .put("type", "object")
                 .put("properties", JSONObject()
-                    .put("direction", JSONObject().put("type", "string").put("enum", listOf("down", "up"))))
+                    .put("direction", prop("string", "اتجاه التمرير", listOf("down", "up"))))
                 .put("required", org.json.JSONArray().put("direction")),
             risk = Risk.HIGH,
         )
@@ -162,8 +163,8 @@ class AccessibilityTools {
             parameters = JSONObject()
                 .put("type", "object")
                 .put("properties", JSONObject()
-                    .put("button", JSONObject().put("type", "string")
-                        .put("enum", listOf("back", "home", "recents", "notifications", "quick_settings"))))
+                    .put("button", prop("string", "زر النظام", listOf("back", "home", "recents", "notifications", "quick_settings")))
+                        )))
                 .put("required", org.json.JSONArray().put("button")),
             risk = Risk.MEDIUM,
         )

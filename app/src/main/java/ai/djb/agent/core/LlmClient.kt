@@ -209,6 +209,8 @@ class LlmClient(
             if (tools.isNotEmpty()) {
                 put("tools", JSONArray().apply { tools.forEach { put(it.toOpenAi()) } })
                 put("tool_choice", "auto")
+                // Parallel calls multiply malformed arguments; keep it to one at a time.
+                put("parallel_tool_calls", false)
             }
         }
 
@@ -235,6 +237,16 @@ class LlmClient(
         if (code !in 200..299) {
             val snippet = text.errorSnippet()
             val hint = when (code) {
+                400 -> buildString {
+                    append("طلب مرفوض (400)")
+                    if (snippet.contains("schema", ignoreCase = true)) {
+                        append(" — مخطط إحدى الأدوات غير صالح عند هذا المزوّد")
+                    } else if (snippet.contains("tool", ignoreCase = true)) {
+                        append(" — المزوّد رفض تعريف الأدوات (قد لا يدعم tool calling)")
+                    } else if (snippet.contains("model", ignoreCase = true)) {
+                        append(" — اسم الموديل غير مقبول")
+                    }
+                }
                 401, 403 -> "المفتاح غير صالح أو غير مصرّح له"
                 404 -> "الموديل أو المسار غير موجود — تحقق من Base URL واسم الموديل"
                 429 -> "تجاوز حد الطلبات"
@@ -266,14 +278,15 @@ class LlmClient(
             for (i in 0 until arr.length()) {
                 val obj = arr.optJSONObject(i) ?: continue
                 val fn = obj.optJSONObject("function") ?: continue
-                val argsRaw = fn.optString("arguments", "{}")
+                val argsRaw = fn.optString("arguments", "{}").ifBlank { "{}" }
                 val args = runCatching { JSONObject(argsRaw) }
-                    .getOrElse { JSONObject().put("_raw", argsRaw) }
+                    .getOrElse { JSONObject().put("_parse_error", argsRaw.take(500)) }
                 calls.add(
                     ToolCall(
                         id = obj.optString("id", "call_$i"),
                         name = fn.optString("name"),
                         arguments = args,
+                        rawArguments = argsRaw,
                     )
                 )
             }

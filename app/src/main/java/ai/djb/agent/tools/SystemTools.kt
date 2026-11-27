@@ -4,6 +4,7 @@ import ai.djb.agent.core.AgentTool
 import ai.djb.agent.core.Risk
 import ai.djb.agent.core.ToolContext
 import ai.djb.agent.core.ToolSpec
+import ai.djb.agent.core.prop
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -131,7 +132,7 @@ class SystemTools {
             parameters = JSONObject()
                 .put("type", "object")
                 .put("properties", JSONObject()
-                    .put("action", JSONObject().put("type", "string").put("enum", listOf("read", "write")))
+                    .put("action", prop("string", "read أو write", listOf("read", "write")))
                     .put("text", JSONObject().put("type", "string")))
                 .put("required", org.json.JSONArray().put("action")),
             risk = Risk.MEDIUM,
