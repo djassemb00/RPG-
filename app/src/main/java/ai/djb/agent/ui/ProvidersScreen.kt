@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
@@ -36,10 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ai.djb.agent.core.ProviderPreset
 
 @Composable
@@ -50,6 +56,10 @@ fun ProvidersScreen(
     onToggle: (String, Boolean) -> Unit,
     onMove: (String, Boolean) -> Unit,
     onTest: (String) -> Unit,
+    onDiagnose: (String) -> Unit,
+    onLoadModels: (String) -> Unit,
+    onPickModel: (String, String) -> Unit,
+    onAutoFix: (String) -> Unit,
 ) {
     var editing by remember { mutableStateOf<ProviderPreset?>(null) }
 
@@ -146,6 +156,53 @@ fun ProvidersScreen(
                                 Text("اختبار", style = MaterialTheme.typography.labelSmall)
                             }
                         }
+                        OutlinedButton(
+                            onClick = { onLoadModels(slot.presetId) },
+                            enabled = state.modelLoadingFor != slot.presetId,
+                        ) {
+                            if (state.modelLoadingFor == slot.presetId) {
+                                CircularProgressIndicator(Modifier.height(14.dp).width(14.dp), strokeWidth = 2.dp)
+                            } else {
+                                Text("الموديلات", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        OutlinedButton(onClick = { onAutoFix(slot.presetId) }) {
+                            Text("إصلاح تلقائي", style = MaterialTheme.typography.labelSmall)
+                        }
+                        OutlinedButton(onClick = { onDiagnose(slot.presetId) }) {
+                            Text("تشخيص", style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+
+                    val models = state.modelLists[slot.presetId]
+                    if (models != null) {
+                        Spacer(Modifier.height(6.dp))
+                        MonoLabel("موديلات ${slot.label} المتاحة (${models.size}) — اضغط للاختيار:")
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 220.dp)
+                                .verticalScroll(rememberScrollState()),
+                        ) {
+                            models.forEach { id ->
+                                Text(
+                                    text = (if (id == slot.model) "✓ " else "• ") + id,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 11.sp,
+                                    color = if (id == slot.model) MaterialTheme.colorScheme.secondary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onPickModel(slot.presetId, id) }
+                                        .padding(vertical = 3.dp),
+                                )
+                            }
+                        }
+                    }
+                    state.modelListError?.let {
+                        Spacer(Modifier.height(4.dp))
+                        Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                    }
                         IconButton(onClick = { onMove(slot.presetId, true) }) {
                             Icon(Icons.Filled.ArrowUpward, contentDescription = "أعلى")
                         }

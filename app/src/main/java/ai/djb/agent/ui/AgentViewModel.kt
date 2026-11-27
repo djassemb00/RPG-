@@ -63,6 +63,10 @@ data class UiState(
     val providerChain: String = "",
     val providerTesting: String? = null,
     val providerTestResult: String? = null,
+    /** presetId -> live model list fetched from the provider. */
+    val modelLists: Map<String, List<String>> = emptyMap(),
+    val modelLoadingFor: String? = null,
+    val modelListError: String? = null,
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -213,6 +217,106 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         )
         refreshSettings()
         system("تم حفظ مزوّد $label. سلسلة الطلب: ${app.client.describeChain()}")
+    }
+
+    /** "Why is it 404?" — shows the exact request shape that will be sent. */
+    fun diagnose(presetId: String) {
+        val slot = app.providers.load().firstOrNull { it.presetId == presetId } ?: return
+        val fullUrl = "${slot.baseUrl.trimEnd('/')}/chat/completions"
+        system(
+            buildString {
+                appendLine("تشخيص: ${slot.label}")
+                appendLine("Base URL: ${slot.baseUrl}")
+                appendLine("المسار الكامل: $fullUrl")
+                appendLine("الموديل: ${slot.model}")
+                appendLine(
+                    "المفتاح: " + if (slot.key.isBlank()) "غير موجود!"
+                    else "محفوظ (${slot.key.take(3)}… طوله ${slot.key.length})"
+                )
+                when {
+                    !slot.baseUrl.startsWith("https://") && !slot.baseUrl.contains("192.168") ->
+                        append("⚠ الـ Base URL لا يبدأ بـ https://")
+                    fullUrl.contains("/v1/v1") ->
+                        append("⚠ Base URL يحتوي /v1 مرتين — أزل النسخة الزائدة")
+                    slot.model.isBlank() -> append("⚠ اسم الموديل فارغ")
+                    else -> append("إن ظهر 404: تحقّق من المسار أعلاه، ثم استخدم «جلب الموديلات» لاختيار اسم صحيح.")
+                }
+            }
+        )
+    }
+
+    /** Fetches the provider's live catalog so the user picks a name that exists now. */
+    fun loadModels(presetId: String) {
+        val slot = app.providers.load().firstOrNull { it.presetId == presetId } ?: return
+        _state.value = _state.value.copy(modelLoadingFor = presetId, modelListError = null)
+        viewModelScope.launch {
+            app.client.listModels(slot).fold(
+                onSuccess = { models ->
+                    _state.value = _state.value.copy(
+                        modelLoadingFor = null,
+                        modelLists = _state.value.modelLists + (presetId to models),
+                    )
+                    system("جُلب ${models.size} موديلًا من ${slot.label}.")
+                },
+                onFailure = { err ->
+                    val msg = err.message ?: "فشل جلب الموديلات"
+                    _state.value = _state.value.copy(modelLoadingFor = null, modelListError = msg)
+                    system("تعذّر جلب الموديلات: $msg")
+                },
+            )
+        }
+    }
+
+    fun setModel(presetId: String, model: String) {
+        val slot = app.providers.load().firstOrNull { it.presetId == presetId } ?: return
+        app.providers.upsert(slot.copy(model = model))
+        refreshSettings()
+        system("موديل ${slot.label} الآن: $model")
+    }
+
+    /**
+     * Auto-repair a retired model id: read the provider catalog, then try candidates
+     * until one actually answers.
+     */
+    fun autoFixModel(presetId: String) {
+        val slot = app.providers.load().firstOrNull { it.presetId == presetId } ?: return
+        _state.value = _state.value.copy(modelLoadingFor = presetId)
+        viewModelScope.launch {
+            val catalog = app.client.listModels(slot).getOrNull().orEmpty()
+            val preset = ai.djb.agent.core.ProviderPreset.byId(presetId)
+            val candidates = buildList {
+                preset?.let { add(it.defaultModel) }
+                catalog.filterNot { id ->
+                    val lower = id.lowercase()
+                    listOf("whisper", "embed", "tts", "guard", "rerank", "moderation")
+                        .any { lower.contains(it) }
+                }.sortedBy { chatScore(it) }.forEach { add(it) }
+            }.distinct()
+
+            val working = app.client.resolveWorkingModel(slot, candidates.take(8))
+            _state.value = _state.value.copy(modelLoadingFor = null)
+            if (working != null) {
+                app.providers.upsert(slot.copy(model = working))
+                refreshSettings()
+                system("تم إصلاح الموديل: $working (كان ${slot.model})")
+            } else {
+                system(
+                    "لم أجد موديلًا يستجيب — راجع «تشخيص» للمسار، وتأكد أن المفتاح من نفس المزوّد، " +
+                        "ثم اجلب الموديلات واختر واحدًا يدويًا."
+                )
+            }
+        }
+    }
+
+    private fun chatScore(model: String): Int {
+        val m = model.lowercase()
+        var s = 0
+        if (m.contains("instruct") || m.contains("chat")) s -= 2
+        if (m.contains("free") || m.contains("flash")) s -= 1
+        if (m.contains("mini") || m.contains("small")) s += 2
+        if (m.contains("audio") || m.contains("vision")) s += 1
+        s += m.length / 25
+        return s
     }
 
     fun removeProvider(presetId: String, label: String) {

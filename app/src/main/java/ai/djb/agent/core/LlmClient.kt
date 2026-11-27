@@ -109,6 +109,72 @@ class LlmClient(
         )
     }
 
+    /**
+     * Asks the provider what it actually serves (GET /models).
+     *
+     * This is the fix for "model not found": instead of trusting a hard-coded id
+     * that may have been retired, we read the provider's live catalog and let the
+     * user pick from it.
+     */
+    suspend fun listModels(slot: ProviderSlot): Result<List<String>> = withContext(Dispatchers.IO) {
+        runCatching {
+            val base = slot.baseUrl.trimEnd('/')
+            val request = Request.Builder()
+                .url("$base/models")
+                .addHeader("Authorization", "Bearer ${slot.key}")
+                .addHeader("Accept", "application/json")
+                .get()
+                .build()
+
+            val (code, text) = try {
+                http.newCall(request).execute().use { r -> r.code to r.body?.string().orEmpty() }
+            } catch (e: IOException) {
+                throw LlmException("تعذّر الوصول لقائمة الموديلات: ${e.message}")
+            }
+
+            if (code !in 200..299) {
+                throw LlmException("HTTP $code عند جلب الموديلات: ${text.errorSnippet()}")
+            }
+
+            val root = JSONObject(text)
+            val arr = root.optJSONArray("data")
+                ?: root.optJSONArray("models")
+                ?: throw LlmException("استجابة غير متوقعة من /models")
+
+            val ids = ArrayList<String>()
+            for (i in 0 until arr.length()) {
+                val obj = arr.optJSONObject(i) ?: continue
+                val id = obj.optString("id").ifBlank { obj.optString("name") }
+                if (id.isNotBlank()) ids.add(id)
+            }
+            ids.distinct().sorted()
+        }
+    }
+
+    /**
+     * Tries a list of candidate ids and returns the first that answers.
+     * Used when a preset's default model has been retired by the provider.
+     */
+    suspend fun resolveWorkingModel(slot: ProviderSlot, candidates: List<String>): String? =
+        withContext(Dispatchers.IO) {
+            for (candidate in candidates) {
+                val ok = try {
+                    callOnce(
+                        slot.copy(model = candidate),
+                        listOf(ChatMessage.user("hi")),
+                        emptyList(),
+                    )
+                    true
+                } catch (e: AttemptFailed) {
+                    // Auth problems aren't model-specific: stop early.
+                    if (!e.retryable && e.message.contains("غير صالح")) return@withContext null
+                    false
+                }
+                if (ok) return@withContext candidate
+            }
+            null
+        }
+
     /** Reachability probe used by the "test" button in settings. */
     suspend fun testProvider(slot: ProviderSlot): String = withContext(Dispatchers.IO) {
         try {
@@ -170,7 +236,7 @@ class LlmClient(
             val snippet = text.errorSnippet()
             val hint = when (code) {
                 401, 403 -> "المفتاح غير صالح أو غير مصرّح له"
-                404 -> "الموديل أو المسار غير موجود"
+                404 -> "الموديل أو المسار غير موجود — تحقق من Base URL واسم الموديل"
                 429 -> "تجاوز حد الطلبات"
                 in 500..599 -> "خطأ مؤقت عند المزوّد"
                 else -> "HTTP $code"

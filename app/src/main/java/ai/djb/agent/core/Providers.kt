@@ -73,12 +73,17 @@ data class ProviderPreset(
          * Curated from cheahjs/free-llm-api-resources and similar directories.
          * These are the provider's own free tiers — you create the key yourself.
          * Nothing here is a shared or leaked key.
+         *
+         * Model catalogs churn fast (Groq retired Llama 3.3 for free tiers in Aug 2026,
+         * GitHub Models was retired entirely in Jul 2026). The default model here is
+         * only a starting guess: the app fetches /models from the provider on save and
+         * the user can pick from what the provider actually serves right now.
          */
         val ALL: List<ProviderPreset> = listOf(
             ProviderPreset(
                 "groq", "Groq", "https://api.groq.com/openai/v1",
-                "llama-3.3-70b-versatile",
-                "طبقة مجانية سخية (~30 طلب/دقيقة)", "https://console.groq.com/keys",
+                "openai/gpt-oss-120b",
+                "طبقة مجانية: ~30 طلب/دقيقة · 1000/يوم", "https://console.groq.com/keys",
             ),
             ProviderPreset(
                 "gemini", "Google Gemini", "https://generativelanguage.googleapis.com/v1beta/openai",
@@ -87,13 +92,13 @@ data class ProviderPreset(
             ),
             ProviderPreset(
                 "cerebras", "Cerebras", "https://api.cerebras.ai/v1",
-                "llama-3.3-70b",
+                "gpt-oss-120b",
                 "طبقة مجانية سريعة جدًا", "https://cloud.cerebras.ai",
             ),
             ProviderPreset(
                 "openrouter", "OpenRouter", "https://openrouter.ai/api/v1",
-                "google/gemini-2.0-flash-exp:free",
-                "موديلات :free عديدة", "https://openrouter.ai/keys",
+                "openai/gpt-oss-120b:free",
+                "موديلات :free عديدة (تحقق من القائمة الحية)", "https://openrouter.ai/keys",
             ),
             ProviderPreset(
                 "mistral", "Mistral", "https://api.mistral.ai/v1",
@@ -104,11 +109,6 @@ data class ProviderPreset(
                 "nvidia", "NVIDIA NIM", "https://integrate.api.nvidia.com/v1",
                 "meta/llama-3.3-70b-instruct",
                 "طبقة مجانية واسعة", "https://build.nvidia.com",
-            ),
-            ProviderPreset(
-                "github", "GitHub Models", "https://models.inference.ai.azure.com",
-                "gpt-4o-mini",
-                "مجاني بحساب GitHub", "https://github.com/settings/tokens",
             ),
             ProviderPreset(
                 "openai", "OpenAI", "https://api.openai.com/v1",

@@ -149,6 +149,10 @@ fun AgentRoot(app: AgentApp) {
                     onToggle = { id, on -> vm.setProviderEnabled(id, on); settingsVersion++ },
                     onMove = { id, up -> vm.moveProvider(id, up); settingsVersion++ },
                     onTest = { id -> vm.testProvider(id) },
+                    onDiagnose = { id -> vm.diagnose(id) },
+                    onLoadModels = { id -> vm.loadModels(id) },
+                    onPickModel = { id, model -> vm.setModel(id, model); settingsVersion++ },
+                    onAutoFix = { id -> vm.autoFixModel(id); settingsVersion++ },
                 )
                 Tab.SETTINGS -> SettingsScreen(
                     state = state,
