@@ -163,8 +163,7 @@ class AccessibilityTools {
             parameters = JSONObject()
                 .put("type", "object")
                 .put("properties", JSONObject()
-                    .put("button", prop("string", "زر النظام", listOf("back", "home", "recents", "notifications", "quick_settings")))
-                        )))
+                    .put("button", prop("string", "زر النظام", listOf("back", "home", "recents", "notifications", "quick_settings"))))
                 .put("required", org.json.JSONArray().put("button")),
             risk = Risk.MEDIUM,
         )
