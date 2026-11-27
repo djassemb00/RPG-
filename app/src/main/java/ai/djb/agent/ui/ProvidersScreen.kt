@@ -203,6 +203,8 @@ fun ProvidersScreen(
                         Spacer(Modifier.height(4.dp))
                         Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
                     }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { onMove(slot.presetId, true) }) {
                             Icon(Icons.Filled.ArrowUpward, contentDescription = "أعلى")
                         }
