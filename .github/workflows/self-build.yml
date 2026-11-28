@@ -11,13 +11,16 @@ on:
     inputs:
       reason:
         description: "Why the agent is changing itself"
+        type: string
         required: true
       files:
         description: "JSON: [{path, content_base64}]"
+        type: string
         required: true
       bump:
-        description: "auto | minor | none"
-        default: auto
+        description: "auto | none"
+        type: string
+        default: "auto"
         required: false
 
 permissions:
