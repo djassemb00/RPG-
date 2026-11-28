@@ -27,6 +27,13 @@ class SkillAuthoringTools {
                 steps: مصفوفة من كائنات {"tool": "اسم_الأداة", "args": {...}, "save_as": "اسم_اختياري"}.
                 تُتحقق كل خطوة قبل الحفظ؛ إن كانت أداة غير موجودة تُرفض المهارة.
                 استبدل القيم المتغيّرة بعلامات مثل {{text}} ثم مرّرها عند التشغيل.
+
+                خيارات كل خطوة (اختيارية):
+                - retry: عدد إعادات المحاولة عند الفشل (0-3)، للخطوات المعتمدة على الشبكة أو انتظار واجهة.
+                - stop_on_error: false يعني أن فشل الخطوة لا يوقف المهارة.
+                - branches: شروط تُقيَّم على نتيجة الخطوة:
+                  [{"when": "نص", "match": "contains" أو "not_contains", "then": [خطوات]}]
+                  استخدمها للتعافي: إن لم يُعثر على العنصر، جرّب مسارًا بديلًا.
             """.trimIndent(),
             parameters = JSONObject()
                 .put("type", "object")
@@ -54,6 +61,14 @@ class SkillAuthoringTools {
                 if (!registry.has(step.tool)) {
                     return "ERROR: الخطوة ${i + 1} تستخدم أداة غير موجودة '${step.tool}'. " +
                         "الأدوات المتاحة: ${registry.specs().joinToString { it.name }}"
+                }
+                // Branch bodies reference tools too; a bad name there would only
+                // surface at runtime, deep inside a recovery path.
+                for (branch in step.branches) {
+                    val bad = branch.then.firstOrNull { !registry.has(it.tool) }
+                    if (bad != null) {
+                        return "ERROR: شرط الخطوة ${i + 1} يستخدم أداة غير موجودة '${bad.tool}'."
+                    }
                 }
                 steps.add(step)
             }
@@ -130,7 +145,7 @@ class SkillAuthoringTools {
             }
 
             return if (outcome.failedAt == null) {
-                "المهارة '$name' نجحت (${skill.steps.size} خطوة).\n" + outcome.transcript
+                "المهارة '$name' نجحت (${outcome.executed} خطوة منفّذة).\n" + outcome.transcript
             } else {
                 "المهارة '$name' فشلت عند الخطوة ${outcome.failedAt + 1}: ${outcome.error}\n" + outcome.transcript
             }

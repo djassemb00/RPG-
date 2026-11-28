@@ -222,15 +222,56 @@ interface AgentTool {
     suspend fun execute(args: JSONObject, ctx: ToolContext): String
 }
 
+/**
+ * A conditional branch on a skill step.
+ *
+ * `when_` is matched against the step's result text; `then` steps run in order and
+ * may themselves be conditional. This is what turns a linear plan into a plan that
+ * can recover ("if the screen didn't change, retry through the other path").
+ */
+data class SkillBranch(
+    val when_: String,
+    val contains: Boolean = true,
+    val then: List<SkillStep> = emptyList(),
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("when", when_)
+        put("match", if (contains) "contains" else "not_contains")
+        put("then", JSONArray().apply { then.forEach { put(it.toJson()) } })
+    }
+
+    companion object {
+        fun fromJson(obj: JSONObject): SkillBranch = SkillBranch(
+            when_ = obj.optString("when"),
+            contains = obj.optString("match", "contains") != "not_contains",
+            then = obj.optJSONArray("then")?.let { array ->
+                (0 until array.length()).mapNotNull { i ->
+                    array.optJSONObject(i)?.let { SkillStep.fromJson(it) }
+                }
+            }.orEmpty(),
+        )
+    }
+}
+
 data class SkillStep(
     val tool: String,
     val args: JSONObject = JSONObject(),
     val saveAs: String? = null,
+    /** Retry this step once more if it returns an error. */
+    val retry: Int = 0,
+    /** Abort the whole skill when this step fails (default true). */
+    val stopOnError: Boolean = true,
+    val branches: List<SkillBranch> = emptyList(),
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("tool", tool)
         put("args", args)
         saveAs?.let { put("save_as", it) }
+        if (retry > 0) put("retry", retry)
+        if (!stopOnError) put("stop_on_error", false)
+        if (branches.isNotEmpty()) {
+            put("branches", JSONArray().apply { branches.forEach { put(it.toJson()) } })
+        }
     }
 
     companion object {
@@ -238,6 +279,13 @@ data class SkillStep(
             tool = obj.optString("tool"),
             args = obj.optJSONObject("args") ?: JSONObject(),
             saveAs = obj.optString("save_as").takeIf { it.isNotBlank() },
+            retry = obj.optInt("retry", 0).coerceIn(0, 3),
+            stopOnError = obj.optBoolean("stop_on_error", true),
+            branches = obj.optJSONArray("branches")?.let { array ->
+                (0 until array.length()).mapNotNull { i ->
+                    array.optJSONObject(i)?.let { SkillBranch.fromJson(it) }
+                }
+            }.orEmpty(),
         )
     }
 }

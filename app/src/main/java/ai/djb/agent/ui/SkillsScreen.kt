@@ -93,6 +93,20 @@ fun SkillsScreen(
                             "موثوقية=" + if (skill.runs == 0) "—" else "${(skill.reliability * 100).toInt()}%" +
                             " · ${fmt.format(Date(skill.createdAt))}"
                     )
+                    val conditional = skill.steps.count { it.branches.isNotEmpty() }
+                    val retrying = skill.steps.count { it.retry > 0 }
+                    if (conditional > 0 || retrying > 0) {
+                        Spacer(Modifier.height(4.dp))
+                        MonoLabel(
+                            buildString {
+                                if (conditional > 0) append("شروط=$conditional")
+                                if (retrying > 0) {
+                                    if (isNotEmpty()) append(" · ")
+                                    append("إعادة محاولة=$retrying")
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
