@@ -83,6 +83,7 @@ data class UiState(
     val adbResult: String? = null,
     val visionEnabled: Boolean = true,
     val autoLearn: Boolean = true,
+    val cloudConfigured: Boolean = false,
     val backupBusy: Boolean = false,
     val backupMessage: String? = null,
     val backupCounts: BackupCounts = BackupCounts(),
@@ -94,6 +95,7 @@ data class UiState(
     val upgradeState: UpgradeViewState = UpgradeViewState(),
     val growth: GrowthViewState = GrowthViewState(),
     val learning: LearningViewState = LearningViewState(),
+    val cloud: CloudViewState = CloudViewState(),
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -151,6 +153,8 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             adbLastError = app.adb.config().lastError,
             visionEnabled = s.visionEnabled,
             autoLearn = s.autoLearn,
+            cloud = _state.value.cloud.copy(url = s.cloudUrl, token = s.cloudToken, clientId = s.cloudClientId),
+            cloudConfigured = s.cloudUrl.isNotBlank() && s.cloudToken.isNotBlank(),
             providerChain = app.client.describeChain(),
             configured = app.client.hasUsableProvider(),
         )
@@ -507,6 +511,59 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             }
             _state.value = _state.value.copy(adbBusy = false, adbResult = text.trim())
             system(text.trim())
+        }
+    }
+
+    fun saveCloud(url: String, token: String, client: String) {
+        app.settings.cloudUrl = url
+        app.settings.cloudToken = token
+        app.settings.cloudClientId = client
+        _state.value = _state.value.copy(
+            cloud = _state.value.cloud.copy(
+                url = app.settings.cloudUrl,
+                token = app.settings.cloudToken,
+                clientId = app.settings.cloudClientId,
+                message = "حُفظت الإعدادات.",
+            ),
+            cloudConfigured = app.cloud.isConfigured(),
+        )
+    }
+
+    fun probeCloud() {
+        _state.value = _state.value.copy(cloud = _state.value.cloud.copy(busy = true))
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val health = app.cloud.health()
+            val status = if (health == null) {
+                "تعذّر الوصول. تحقّق من الرابط ومن أن العامل منشور."
+            } else {
+                buildString {
+                    append(if (health.ok) "متاح" else "استجابة غير سليمة")
+                    append(" · المخزن: ${health.storage}")
+                    if (health.storage == "memory") append(" (مؤقت)")
+                    append(" · موديل مضبوط: ${if (health.modelConfigured) "نعم" else "لا"}")
+                }
+            }
+            _state.value = _state.value.copy(
+                cloud = _state.value.cloud.copy(busy = false, status = status),
+            )
+        }
+    }
+
+    fun pushToCloud() {
+        _state.value = _state.value.copy(cloud = _state.value.cloud.copy(busy = true))
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val ok = app.cloud.pushSnapshot(
+                client = app.settings.cloudClientId,
+                skills = app.store.readSkills().map { it.toJson() },
+                lessons = app.lessons.lessons().map { it.text },
+                memory = app.store.readMemory(),
+            )
+            _state.value = _state.value.copy(
+                cloud = _state.value.cloud.copy(
+                    busy = false,
+                    message = if (ok) "تم الدفع إلى السحابة." else "فشل الدفع — تحقّق من الرابط والرمز.",
+                )
+            )
         }
     }
 

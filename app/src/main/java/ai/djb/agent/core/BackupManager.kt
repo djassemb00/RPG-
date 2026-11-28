@@ -94,6 +94,15 @@ class BackupManager(
                 put("extra_instruction", settings.extraInstruction)
             })
 
+            // Cloud worker URL only — never the shared token, for the same reason the
+            // ADB private key stays behind: a backup file is meant to be shareable.
+            put("cloud", JSONObject().apply {
+                if (settings.cloudUrl.isNotBlank()) {
+                    put("url", settings.cloudUrl)
+                    put("client", settings.cloudClientId)
+                }
+            })
+
             // ADB host/port only: the private key never leaves the device.
             put("adb", JSONObject().apply {
                 put("host", adb.config().host)

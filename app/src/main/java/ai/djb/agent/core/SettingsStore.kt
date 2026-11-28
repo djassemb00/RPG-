@@ -71,6 +71,21 @@ class SettingsStore(private val store: JsonStore) {
         get() = json().optBoolean("auto_learn", true)
         set(value) = put("auto_learn", value)
 
+    /** Cloud worker base URL, e.g. https://djb-ai-worker.vercel.app */
+    var cloudUrl: String
+        get() = json().optString("cloud_url")
+        set(value) = put("cloud_url", value.trim().trimEnd('/'))
+
+    /** Shared secret for the worker; never logged, never exported. */
+    var cloudToken: String
+        get() = json().optString("cloud_token")
+        set(value) = put("cloud_token", value.trim())
+
+    /** Stable per-install id so several devices can share one cloud brain. */
+    var cloudClientId: String
+        get() = json().optString("cloud_client").ifBlank { "primary" }
+        set(value) = put("cloud_client", value.trim().ifBlank { "primary" })
+
     var extraInstruction: String
         get() = json().optString("extra_instruction")
         set(value) = put("extra_instruction", value)
@@ -86,5 +101,6 @@ class SettingsStore(private val store: JsonStore) {
 
     /** Safe for logs / UI, never includes the key. */
     fun summary(): String =
-        "model=$model base=$apiBaseUrl steps=$maxSteps autonomy=${autonomy.name} selfImprove=$selfImprove"
+        "model=$model base=$apiBaseUrl steps=$maxSteps autonomy=${autonomy.name} " +
+            "selfImprove=$selfImprove cloud=${if (cloudUrl.isNotBlank()) "on" else "off"}"
 }

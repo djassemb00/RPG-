@@ -1,0 +1,12 @@
+{
+  "name": "djb-ai-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloud brain + task worker for the djb ai Android agent",
+  "type": "module",
+  "scripts": {
+    "dev": "node api/index.js",
+    "check": "node --check api/index.js"
+  },
+  "engines": { "node": ">=20" }
+}

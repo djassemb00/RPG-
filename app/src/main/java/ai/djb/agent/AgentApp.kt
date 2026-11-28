@@ -18,7 +18,9 @@ import ai.djb.agent.core.SelfCode
 import ai.djb.agent.core.SelfUpgrade
 import ai.djb.agent.core.SettingsStore
 import ai.djb.agent.core.ToolContext
+import ai.djb.agent.core.CloudBridge
 import ai.djb.agent.core.ToolRegistry
+import ai.djb.agent.core.WebBridge
 import ai.djb.agent.core.ToolRegistryHolder
 import ai.djb.agent.tools.ShellBridge
 import android.app.Application
@@ -86,6 +88,14 @@ class AgentApp : Application() {
     lateinit var training: TrainingData
         private set
 
+    /** Guarded outbound HTTP for reading the web. */
+    lateinit var web: WebBridge
+        private set
+
+    /** Optional cloud worker: long tasks + cross-device memory. */
+    lateinit var cloud: CloudBridge
+        private set
+
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
@@ -107,10 +117,12 @@ class AgentApp : Application() {
         growth = GrowthEngine(store, settings, sandbox, client)
         lessons = LessonLearner(store, client)
         training = TrainingData(store)
+        web = WebBridge()
+        cloud = CloudBridge(settings)
 
         val context = ToolContext(
             this, store, settings, permissions, bus, shell, adb, backup,
-            selfCode, sandbox, upgrade, growth, lessons, training,
+            selfCode, sandbox, upgrade, growth, lessons, training, web, cloud,
         )
         registry = ToolRegistry(context)
         registry.installDefaults()

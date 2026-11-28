@@ -222,6 +222,8 @@ class ToolContext(
     val growth: GrowthEngine,
     val lessons: LessonLearner,
     val training: TrainingData,
+    val web: WebBridge,
+    val cloud: CloudBridge,
 )
 
 interface AgentTool {

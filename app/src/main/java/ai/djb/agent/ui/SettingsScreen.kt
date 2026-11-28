@@ -40,6 +40,7 @@ fun SettingsScreen(
     onOpenUpgrade: () -> Unit = {},
     onOpenGrowth: () -> Unit = {},
     onOpenLearning: () -> Unit = {},
+    onOpenCloud: () -> Unit = {},
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
@@ -251,6 +252,17 @@ fun SettingsScreen(
                         MonoLabel("دروس من نجاحاتي + تصدير بيانات تدريب JSONL")
                     }
                     TextButton(onClick = onOpenLearning) { Text("فتح") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("السحابة والإنترنت", fontWeight = FontWeight.SemiBold)
+                        MonoLabel(
+                            if (state.cloudConfigured) "عامل سحابي مضبوط · أدوات إنترنت جاهزة"
+                            else "أدوات إنترنت جاهزة · اربط عاملًا للمهام الطويلة"
+                        )
+                    }
+                    TextButton(onClick = onOpenCloud) { Text("فتح") }
                 }
             }
         }

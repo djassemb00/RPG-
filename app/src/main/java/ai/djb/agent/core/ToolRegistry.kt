@@ -11,6 +11,7 @@ import ai.djb.agent.tools.ScheduleTools
 import ai.djb.agent.tools.SelfCodeTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
+import ai.djb.agent.tools.CloudTools
 import ai.djb.agent.tools.GrowthTools
 import ai.djb.agent.tools.LearningTools
 import ai.djb.agent.tools.SystemTools
@@ -113,6 +114,14 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(SelfCodeTools.SearchSource())
         register(SelfCodeTools.ProposePatch())
         register(SelfCodeTools.ListPatches())
+
+        // --- leaving the phone: web + cloud worker ---
+        register(CloudTools.WebFetch())
+        register(CloudTools.WebSearch())
+        register(CloudTools.HttpGet())
+        register(CloudTools.CloudStatus())
+        register(CloudTools.CloudTask())
+        register(CloudTools.CloudSync())
 
         // --- learning: compress successes into lessons, export them as training data ---
         register(LearningTools.LearnLesson())

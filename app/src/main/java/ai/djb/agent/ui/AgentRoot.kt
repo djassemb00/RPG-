@@ -43,7 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP, SELFCODE, UPGRADE, GROWTH, LEARNING }
+private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP, SELFCODE, UPGRADE, GROWTH, LEARNING, CLOUD }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -185,6 +185,7 @@ fun AgentRoot(app: AgentApp) {
                     onOpenUpgrade = { vm.refreshUpgrade(); vm.runHealthCheck(); tab = Tab.UPGRADE },
                     onOpenGrowth = { vm.refreshGrowth(); tab = Tab.GROWTH },
                     onOpenLearning = { vm.refreshLearning(); tab = Tab.LEARNING },
+                    onOpenCloud = { tab = Tab.CLOUD },
                     onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision, autoLearn ->
                         vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision, autoLearn)
                         settingsVersion++
@@ -245,6 +246,13 @@ fun AgentRoot(app: AgentApp) {
                     onLearn = { vm.learnLesson() },
                     onExport = { vm.exportTraining() },
                     onClear = { vm.clearLessons() },
+                )
+                Tab.CLOUD -> CloudScreen(
+                    onBack = { tab = Tab.SETTINGS },
+                    state = state.cloud,
+                    onSave = { url, token, client -> vm.saveCloud(url, token, client) },
+                    onProbe = { vm.probeCloud() },
+                    onPush = { vm.pushToCloud() },
                 )
                 Tab.LOGS -> LogsScreen(vm)
             }
