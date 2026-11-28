@@ -5,6 +5,8 @@ import ai.djb.agent.core.AgentEvent
 import ai.djb.agent.core.Autonomy
 import ai.djb.agent.core.LogLevel
 import ai.djb.agent.core.ProviderSlot
+import ai.djb.agent.core.Repeat
+import ai.djb.agent.core.ScheduledTask
 import ai.djb.agent.core.Risk
 import ai.djb.agent.services.AgentAccessibilityService
 import androidx.lifecycle.ViewModel
@@ -67,6 +69,7 @@ data class UiState(
     val modelLists: Map<String, List<String>> = emptyMap(),
     val modelLoadingFor: String? = null,
     val modelListError: String? = null,
+    val tasks: List<ScheduledTask> = emptyList(),
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -114,6 +117,7 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
                     lastError = slot.lastError,
                 )
             },
+            tasks = app.tasks.load(),
             providerChain = app.client.describeChain(),
             configured = app.client.hasUsableProvider(),
         )
@@ -376,6 +380,45 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         app.store.writeRules(emptyList())
         refreshSettings()
         system("تم حذف كل القواعد.")
+    }
+
+    // ---- scheduled tasks ----
+
+    fun addTask(title: String, prompt: String, hour: Int, minute: Int, repeat: Repeat) {
+        val task = ScheduledTask(
+            id = java.util.UUID.randomUUID().toString().take(8),
+            title = title,
+            prompt = prompt,
+            hour = hour,
+            minute = minute,
+            repeat = repeat,
+        ).let { it.copy(nextRunAt = it.computeNextRun()) }
+        app.tasks.upsert(task)
+        ai.djb.agent.services.TaskScheduler.scheduleOne(app, task)
+        refreshSettings()
+        system("جُدولت «$title». التشغيل القادم بعد ${((task.nextRunAt - System.currentTimeMillis()) / 60000)} دقيقة.")
+    }
+
+    fun toggleTask(id: String, enabled: Boolean) {
+        val updated = app.tasks.toggle(id, enabled)
+        updated.firstOrNull { it.id == id }?.let {
+            if (enabled) ai.djb.agent.services.TaskScheduler.scheduleOne(app, it)
+            else ai.djb.agent.services.TaskScheduler.cancel(app, id)
+        }
+        refreshSettings()
+    }
+
+    fun deleteTask(id: String) {
+        app.tasks.remove(id)
+        ai.djb.agent.services.TaskScheduler.cancel(app, id)
+        refreshSettings()
+        system("حُذفت المهمة $id.")
+    }
+
+    fun runTaskNow(id: String) {
+        val task = app.tasks.load().firstOrNull { it.id == id } ?: return
+        add(FeedItem(0, FeedKind.USER, "تشغيل يدوي", task.prompt, now()))
+        app.engine.submit(task.prompt)
     }
 
     fun skills(): List<ai.djb.agent.core.Skill> = app.store.readSkills()

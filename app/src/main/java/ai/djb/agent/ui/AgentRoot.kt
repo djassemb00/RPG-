@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
@@ -42,7 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, PROVIDERS, SETTINGS, LOGS }
+private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, SETTINGS, LOGS }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -99,6 +100,12 @@ fun AgentRoot(app: AgentApp) {
                     label = { Text("المهارات") },
                 )
                 NavigationBarItem(
+                    selected = tab == Tab.TASKS,
+                    onClick = { tab = Tab.TASKS },
+                    icon = { Icon(Icons.Filled.Schedule, contentDescription = null) },
+                    label = { Text("المهام") },
+                )
+                NavigationBarItem(
                     selected = tab == Tab.PROVIDERS,
                     onClick = { tab = Tab.PROVIDERS },
                     icon = { Icon(Icons.Filled.Cloud, contentDescription = null) },
@@ -138,6 +145,16 @@ fun AgentRoot(app: AgentApp) {
                     vm = vm,
                     state = state,
                     onChanged = { settingsVersion++ },
+                )
+                Tab.TASKS -> TasksScreen(
+                    tasks = state.tasks,
+                    onAdd = { title, prompt, hour, minute, repeat ->
+                        vm.addTask(title, prompt, hour, minute, repeat)
+                        settingsVersion++
+                    },
+                    onToggle = { id, on -> vm.toggleTask(id, on); settingsVersion++ },
+                    onDelete = { id -> vm.deleteTask(id); settingsVersion++ },
+                    onRunNow = { id -> vm.runTaskNow(id) },
                 )
                 Tab.PROVIDERS -> ProvidersScreen(
                     state = state,

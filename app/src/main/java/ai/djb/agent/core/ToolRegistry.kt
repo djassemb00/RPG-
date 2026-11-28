@@ -4,6 +4,7 @@ import ai.djb.agent.skills.SkillRuntime
 import ai.djb.agent.tools.AccessibilityTools
 import ai.djb.agent.tools.AppControlTools
 import ai.djb.agent.tools.MemoryTools
+import ai.djb.agent.tools.ScheduleTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
 import ai.djb.agent.tools.SystemTools
@@ -73,6 +74,12 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(ShellTools.RunShell())
         register(ShellTools.ShellCapability())
         register(ShellTools.AdbConnect())
+
+        // --- scheduling its own future work ---
+        val stamp = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault())
+        register(ScheduleTools.ScheduleTask(stamp))
+        register(ScheduleTools.ListScheduledTask())
+        register(ScheduleTools.CancelScheduledTask())
 
         // --- self-modification: authoring & running its own skills ---
         register(SkillAuthoringTools.CreateSkill())

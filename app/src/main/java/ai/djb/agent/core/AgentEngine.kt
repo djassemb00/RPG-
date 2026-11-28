@@ -58,6 +58,37 @@ class AgentEngine(
         }
     }
 
+    /**
+     * Runs a task and suspends until it finishes. Used by the scheduler, which needs
+     * to know when a job is done so it can record the outcome and re-arm itself.
+     *
+     * No UI is assumed: if the accessibility service isn't connected, screen tools
+     * report that honestly instead of pretending, which keeps background runs safe.
+     */
+    suspend fun runBlockingTask(task: String): String {
+        var answered = ""
+        val collector = scope.launch {
+            bus.events.collect { event ->
+                if (event is AgentEvent.Answer) answered = event.text
+            }
+        }
+        try {
+            runLock.withLock {
+                running.set(true)
+                bus.emit(AgentEvent.RunningChanged(true))
+                try {
+                    runInternal(task)
+                } finally {
+                    running.set(false)
+                    bus.emit(AgentEvent.RunningChanged(false))
+                }
+            }
+        } finally {
+            collector.cancel()
+        }
+        return answered
+    }
+
     fun cancel() {
         permissions.cancelAll()
         AgentAccessibilityService.instance()?.clearConversation()

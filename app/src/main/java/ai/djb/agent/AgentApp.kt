@@ -5,6 +5,7 @@ import ai.djb.agent.core.EventBus
 import ai.djb.agent.core.JsonStore
 import ai.djb.agent.core.LlmClient
 import ai.djb.agent.core.PermissionBroker
+import ai.djb.agent.core.TaskStore
 import ai.djb.agent.core.ProviderRegistry
 import ai.djb.agent.core.SettingsStore
 import ai.djb.agent.core.ToolContext
@@ -38,10 +39,13 @@ class AgentApp : Application() {
         private set
     lateinit var shell: ShellBridge
         private set
+    lateinit var tasks: TaskStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
+        tasks = TaskStore(store)
         settings = SettingsStore(store)
         bus = EventBus()
         permissions = PermissionBroker(bus)
@@ -63,6 +67,9 @@ class AgentApp : Application() {
             client = client,
             permissions = permissions,
         )
+
+        // Re-arm anything scheduled; cheap and idempotent.
+        runCatching { ai.djb.agent.services.TaskScheduler.scheduleAll(this) }
     }
 
     companion object {
