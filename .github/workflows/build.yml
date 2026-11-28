@@ -41,6 +41,23 @@ jobs:
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
           ls "$ANDROID_SDK_ROOT/platforms" || true
 
+      # The self-edit feature reads the app's own sources from assets. The snapshot is
+      # rebuilt here (never committed) so every APK carries exactly the code it was
+      # built from — a stale snapshot would let the agent 'patch' code that no longer
+      # exists, which is worse than no feature at all.
+      - name: Bundle source snapshot for self-inspection
+        run: |
+          rm -rf app/src/main/assets/source
+          mkdir -p app/src/main/assets/source
+          cd app/src/main/java
+          find . -name '*.kt' -print0 | while IFS= read -r -d '' f; do
+            flat=$(echo "${f#./}" | sed 's|/|__|g')
+            cp "$f" "../assets/source/$flat"
+          done
+          cd "$GITHUB_WORKSPACE"
+          echo "bundled: $(ls app/src/main/assets/source | wc -l) files"
+          ls app/src/main/assets/source | head -3
+
       - name: Build debug APK
         run: |
           set -o pipefail

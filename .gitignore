@@ -13,3 +13,6 @@ local.properties
 *.jks
 *.keystore
 /app/release/
+
+# Generated during the build: the self-inspection snapshot of app sources
+/app/src/main/assets/source/
