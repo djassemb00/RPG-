@@ -58,5 +58,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+    // Pure-Kotlin ADB client: speaks the ADB protocol over TCP, no adb binary needed.
+    implementation("dev.mobile:dadb:1.2.10")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

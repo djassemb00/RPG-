@@ -43,7 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, SETTINGS, LOGS }
+private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,12 +117,6 @@ fun AgentRoot(app: AgentApp) {
                     icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                     label = { Text("الإعدادات") },
                 )
-                NavigationBarItem(
-                    selected = tab == Tab.LOGS,
-                    onClick = { tab = Tab.LOGS },
-                    icon = { Icon(Icons.Filled.Terminal, contentDescription = null) },
-                    label = { Text("السجل") },
-                )
             }
         },
     ) { padding ->
@@ -173,8 +167,17 @@ fun AgentRoot(app: AgentApp) {
                     onSetRole = { id, role -> vm.setProviderRole(id, role); settingsVersion++ },
                     onSetPlanModel = { id, model -> vm.setPlanModel(id, model); settingsVersion++ },
                 )
+                Tab.ADB -> AdbScreen(
+                    state = state,
+                    onConnect = { host, port -> vm.adbConnect(host, port); settingsVersion++ },
+                    onDisconnect = { vm.adbDisconnect(); settingsVersion++ },
+                    onProbe = { vm.adbProbe() },
+                    onOpenSettings = { vm.adbOpenWirelessSettings() },
+                )
                 Tab.SETTINGS -> SettingsScreen(
                     state = state,
+                    onOpenAdb = { tab = Tab.ADB },
+                    onOpenLogs = { tab = Tab.LOGS },
                     onSaveBehaviour = { name, autonomy, selfImprove, steps, extra ->
                         vm.saveBehaviour(name, autonomy, selfImprove, steps, extra)
                         settingsVersion++

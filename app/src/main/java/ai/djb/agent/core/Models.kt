@@ -187,6 +187,7 @@ class ToolContext(
     val permissions: PermissionBroker,
     val bus: EventBus,
     val shell: ShellBridgeRef,
+    val adb: AdbBridge,
 )
 
 interface AgentTool {

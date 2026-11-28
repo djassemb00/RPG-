@@ -1,5 +1,6 @@
 package ai.djb.agent
 
+import ai.djb.agent.core.AdbBridge
 import ai.djb.agent.core.AgentEngine
 import ai.djb.agent.core.EventBus
 import ai.djb.agent.core.JsonStore
@@ -41,11 +42,14 @@ class AgentApp : Application() {
         private set
     lateinit var tasks: TaskStore
         private set
+    lateinit var adb: AdbBridge
+        private set
 
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
         tasks = TaskStore(store)
+        adb = AdbBridge(store)
         settings = SettingsStore(store)
         bus = EventBus()
         permissions = PermissionBroker(bus)
@@ -53,7 +57,7 @@ class AgentApp : Application() {
         providers = ProviderRegistry(store).also { it.migrateLegacySettings(settings) }
         client = LlmClient(settings, providers, bus)
 
-        val context = ToolContext(this, store, settings, permissions, bus, shell)
+        val context = ToolContext(this, store, settings, permissions, bus, shell, adb)
         registry = ToolRegistry(context)
         ToolRegistryHolder.attach(registry)
         registry.installDefaults()

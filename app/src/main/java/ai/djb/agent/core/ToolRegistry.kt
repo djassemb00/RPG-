@@ -2,6 +2,7 @@ package ai.djb.agent.core
 
 import ai.djb.agent.skills.SkillRuntime
 import ai.djb.agent.tools.AccessibilityTools
+import ai.djb.agent.tools.AdbTools
 import ai.djb.agent.tools.AppControlTools
 import ai.djb.agent.tools.MemoryTools
 import ai.djb.agent.tools.ScheduleTools
@@ -73,7 +74,20 @@ class ToolRegistry(private val ctx: ToolContext) {
         // --- shell (app UID, honestly scoped) ---
         register(ShellTools.RunShell())
         register(ShellTools.ShellCapability())
-        register(ShellTools.AdbConnect())
+
+        // --- ADB over TCP, in-process: full device control once paired ---
+        register(AdbTools.AdbConnectTool())
+        register(AdbTools.AdbStatus())
+        register(AdbTools.AdbShell())
+        register(AdbTools.AdbTap())
+        register(AdbTools.AdbSwipe())
+        register(AdbTools.AdbText())
+        register(AdbTools.AdbKey())
+        register(AdbTools.AdbLaunch())
+        register(AdbTools.AdbCurrentApp())
+        register(AdbTools.AdbPackages())
+        register(AdbTools.AdbScreenSize())
+        register(AdbTools.AdbDisconnect())
 
         // --- scheduling its own future work ---
         val stamp = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault())

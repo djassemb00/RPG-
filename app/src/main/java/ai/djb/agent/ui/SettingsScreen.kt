@@ -33,6 +33,8 @@ import ai.djb.agent.core.Autonomy
 @Composable
 fun SettingsScreen(
     state: UiState,
+    onOpenAdb: () -> Unit = {},
+    onOpenLogs: () -> Unit = {},
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
@@ -152,6 +154,38 @@ fun SettingsScreen(
                 },
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("حفظ السلوك") }
+        }
+
+        item { Spacer(Modifier.height(12.dp)) }
+        item {
+            Text("أدوات متقدمة", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+        item {
+            SectionCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Dot(
+                        if (state.adbConnected) MaterialTheme.colorScheme.secondary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("ADB اللاسلكي", fontWeight = FontWeight.SemiBold)
+                        MonoLabel(
+                            if (state.adbConnected) "متصل — ${state.adbTarget}"
+                            else "غير متصل · تحكم أعمق بعد الإقران"
+                        )
+                    }
+                    TextButton(onClick = onOpenAdb) { Text("فتح") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("سجل التدقيق", fontWeight = FontWeight.SemiBold)
+                        MonoLabel("كل استدعاء أداة ونتيجته")
+                    }
+                    TextButton(onClick = onOpenLogs) { Text("فتح") }
+                }
+            }
         }
 
         item { Spacer(Modifier.height(12.dp)) }

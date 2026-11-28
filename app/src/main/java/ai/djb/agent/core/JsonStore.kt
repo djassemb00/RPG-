@@ -14,6 +14,9 @@ interface ShellBridgeRef {
 /** Durable, inspectable, plain-JSON state. Nothing is hidden from the user. */
 class JsonStore(private val dir: File) {
 
+    /** App-private directory holding state files (and the ADB keypair). */
+    fun privateDir(): File = dir.apply { mkdirs() }
+
     private fun file(name: String) = File(dir, name)
 
     @Synchronized

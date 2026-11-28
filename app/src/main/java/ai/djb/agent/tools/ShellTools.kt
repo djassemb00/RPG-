@@ -59,26 +59,4 @@ class ShellTools {
         }
     }
 
-    class AdbConnect : AgentTool {
-        override val spec = ToolSpec(
-            name = "adb_connect",
-            description = "حاول الاتصال بـ ADB اللاسلكي عبر localhost:5555. يتطلب أن يفعّل المستخدم Wireless debugging وربط المنفذ. لا يعمل من دون ذلك.",
-            parameters = JSONObject()
-                .put("type", "object")
-                .put("properties", JSONObject()
-                    .put("port", JSONObject().put("type", "integer").put("description", "المنفذ، افتراضي 5555"))),
-            risk = Risk.HIGH,
-        )
-
-        override suspend fun execute(args: JSONObject, ctx: ToolContext): String {
-            val port = args.optInt("port", 5555)
-            if (ctx.shell.capability() != ShellBridge.Capability.ADB_AVAILABLE) {
-                return "UNAVAILABLE: لا يوجد ملف adb تنفيذي على الجهاز. " +
-                    "التفعيل يتطلب نسخة adb بناءً معماريًا أو اتصالًا من حاسوب (adb pair / adb connect). " +
-                    "لن أزيّف نجاحًا هنا."
-            }
-            val result = ctx.shell.execute("adb connect 127.0.0.1:$port && adb devices", 15_000)
-            return "exit=${result.exitCode}\n${result.asText()}"
-        }
-    }
 }

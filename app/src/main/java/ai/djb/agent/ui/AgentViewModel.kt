@@ -74,6 +74,12 @@ data class UiState(
     val modelListError: String? = null,
     val tasks: List<ScheduledTask> = emptyList(),
     val routingSummary: String = "",
+    val adbConnected: Boolean = false,
+    val adbTarget: String = "",
+    val adbKeyFingerprint: String = "",
+    val adbLastError: String = "",
+    val adbBusy: Boolean = false,
+    val adbResult: String? = null,
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -125,6 +131,10 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             },
             tasks = app.tasks.load(),
             routingSummary = app.client.routingSummary(),
+            adbConnected = app.adb.isConnected(),
+            adbTarget = app.adb.connectedTarget().orEmpty(),
+            adbKeyFingerprint = app.adb.keyFingerprint(),
+            adbLastError = app.adb.config().lastError,
             providerChain = app.client.describeChain(),
             configured = app.client.hasUsableProvider(),
         )
@@ -438,6 +448,53 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         val task = app.tasks.load().firstOrNull { it.id == id } ?: return
         add(FeedItem(0, FeedKind.USER, "تشغيل يدوي", task.prompt, now()))
         app.engine.submit(task.prompt)
+    }
+
+    // ---- ADB ----
+
+    fun adbConnect(host: String, port: Int) {
+        _state.value = _state.value.copy(adbBusy = true, adbResult = null)
+        viewModelScope.launch {
+            val result = app.adb.connect(host, port)
+            _state.value = _state.value.copy(adbBusy = false, adbResult = result)
+            refreshSettings()
+            system(result)
+        }
+    }
+
+    fun adbDisconnect() {
+        app.adb.disconnect()
+        refreshSettings()
+        system("أُغلقت جلسة ADB.")
+    }
+
+    fun adbProbe() {
+        _state.value = _state.value.copy(adbBusy = true)
+        viewModelScope.launch {
+            val info = app.adb.deviceInfo()
+            val size = app.adb.screenSize()
+            val activity = app.adb.currentActivity()
+            val text = buildString {
+                appendLine(info?.trim() ?: "لا معلومات")
+                size?.let { appendLine("الشاشة: ${it.first}x${it.second}") }
+                appendLine(activity?.trim() ?: "")
+            }
+            _state.value = _state.value.copy(adbBusy = false, adbResult = text.trim())
+            system(text.trim())
+        }
+    }
+
+    fun adbSavePort(host: String, port: Int) {
+        val cfg = app.adb.config()
+        app.adb.saveConfig(cfg.copy(host = host, port = port))
+        system("حُفظ هدف ADB: $host:$port")
+    }
+
+    fun adbOpenWirelessSettings() {
+        val intent = android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS)
+            .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+        runCatching { app.startActivity(intent) }
+            .onFailure { system("افتح الإعدادات ← خيارات المطوّر ← التصحيح اللاسلكي يدويًا.") }
     }
 
     fun skills(): List<ai.djb.agent.core.Skill> = app.store.readSkills()
