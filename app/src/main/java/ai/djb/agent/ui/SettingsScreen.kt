@@ -37,6 +37,7 @@ fun SettingsScreen(
     onOpenLogs: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
     onOpenSelfCode: () -> Unit = {},
+    onOpenUpgrade: () -> Unit = {},
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
@@ -213,6 +214,14 @@ fun SettingsScreen(
                         MonoLabel("اقتراحات مهارات من تكرارك + رقع على كود التطبيق")
                     }
                     TextButton(onClick = onOpenSelfCode) { Text("فتح") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("النسخ والصمّام", fontWeight = FontWeight.SemiBold)
+                        MonoLabel("حاوية التحقق · استعادة النسخة المستقرة")
+                    }
+                    TextButton(onClick = onOpenUpgrade) { Text("فتح") }
                 }
             }
         }

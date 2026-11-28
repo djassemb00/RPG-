@@ -12,6 +12,7 @@ import ai.djb.agent.tools.SelfCodeTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
 import ai.djb.agent.tools.SystemTools
+import ai.djb.agent.tools.UpgradeTools
 import ai.djb.agent.tools.VisionTools
 import org.json.JSONObject
 
@@ -110,6 +111,12 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(SelfCodeTools.SearchSource())
         register(SelfCodeTools.ProposePatch())
         register(SelfCodeTools.ListPatches())
+
+        // --- the closed container and the safety valve ---
+        register(UpgradeTools.VerifyCandidate())
+        register(UpgradeTools.Promote())
+        register(UpgradeTools.Rollback())
+        register(UpgradeTools.Status())
 
         // --- vision: see the screen, not just its text ---
         register(VisionTools.Look())

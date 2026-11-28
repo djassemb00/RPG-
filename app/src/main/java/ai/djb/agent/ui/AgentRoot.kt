@@ -43,7 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP, SELFCODE }
+private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP, SELFCODE, UPGRADE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,6 +182,7 @@ fun AgentRoot(app: AgentApp) {
                     onOpenLogs = { tab = Tab.LOGS },
                     onOpenBackup = { vm.refreshBackupCounts(); tab = Tab.BACKUP },
                     onOpenSelfCode = { vm.refreshSelfCode(); tab = Tab.SELFCODE },
+                    onOpenUpgrade = { vm.refreshUpgrade(); vm.runHealthCheck(); tab = Tab.UPGRADE },
                     onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision ->
                         vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision)
                         settingsVersion++
@@ -219,6 +220,14 @@ fun AgentRoot(app: AgentApp) {
                     onRefresh = { vm.refreshSelfCode() },
                     onExportPatch = { id -> vm.exportPatch(id) },
                     onAdoptPattern = { pattern -> vm.adoptPattern(pattern) },
+                )
+                Tab.UPGRADE -> UpgradeScreen(
+                    onBack = { tab = Tab.SETTINGS },
+                    state = state.upgradeState,
+                    onRefresh = { vm.refreshUpgrade() },
+                    onRunHealth = { vm.runHealthCheck() },
+                    onRollback = { reason -> vm.rollbackSelf(reason) },
+                    onRestore = { id -> vm.restoreVersion(id) },
                 )
                 Tab.LOGS -> LogsScreen(vm)
             }

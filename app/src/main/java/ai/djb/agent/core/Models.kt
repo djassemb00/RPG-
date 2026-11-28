@@ -217,6 +217,8 @@ class ToolContext(
     val adb: AdbBridge,
     val backup: BackupManager,
     val selfCode: SelfCode,
+    val sandbox: PatchSandbox,
+    val upgrade: SelfUpgrade,
 )
 
 interface AgentTool {

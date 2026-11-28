@@ -89,6 +89,7 @@ data class UiState(
     val patches: List<PatchView> = emptyList(),
     val sourceCount: Int = 0,
     val selfCodeMessage: String? = null,
+    val upgradeState: UpgradeViewState = UpgradeViewState(),
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -499,6 +500,59 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             }
             _state.value = _state.value.copy(adbBusy = false, adbResult = text.trim())
             system(text.trim())
+        }
+    }
+
+    fun refreshUpgrade() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val st = app.upgrade.state()
+            val versions = app.upgrade.history().map {
+                UpgradeVersionView(it.id, it.label, it.createdAt, it.detail)
+            }
+            _state.value = _state.value.copy(
+                upgradeState = _state.value.upgradeState.copy(
+                    stableId = st.stableId,
+                    candidateId = st.candidateId,
+                    lastRollbackAt = st.lastRollbackAt,
+                    lastRollbackReason = st.lastRollbackReason,
+                    versions = versions,
+                )
+            )
+        }
+    }
+
+    fun runHealthCheck() {
+        viewModelScope.launch {
+            val report = app.health.run()
+            _state.value = _state.value.copy(
+                upgradeState = _state.value.upgradeState.copy(
+                    healthOk = report.ok,
+                    healthSummary = report.summary(),
+                )
+            )
+            refreshUpgrade()
+        }
+    }
+
+    fun rollbackSelf(reason: String) {
+        viewModelScope.launch {
+            val ok = app.upgrade.rollback(reason)
+            _state.value = _state.value.copy(
+                selfCodeMessage = if (ok) "تمت الاستعادة إلى النسخة المستقرة." else "لا نسخة مستقرة محفوظة."
+            )
+            system(if (ok) "استعادة: $reason" else "لا نسخة مستقرة محفوظة.")
+            refreshUpgrade()
+        }
+    }
+
+    fun restoreVersion(id: String) {
+        viewModelScope.launch {
+            val ok = app.upgrade.restore(id)
+            _state.value = _state.value.copy(
+                selfCodeMessage = if (ok) "استُعيدت النسخة $id." else "تعذّرت استعادة $id.",
+            )
+            system(if (ok) "استعادة نسخة $id" else "فشل استعادة $id")
+            refreshUpgrade()
         }
     }
 

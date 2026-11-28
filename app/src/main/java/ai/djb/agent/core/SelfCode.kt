@@ -204,59 +204,12 @@ class SelfCode(private val context: Context, private val store: JsonStore) {
         return count
     }
 
-    /**
-     * Brace/paren balance check that ignores string literals and comments — the naive
-     * count is wrong often enough (braces inside "${…}" and in KDoc) that it produced
-     * false alarms during development.
-     */
+    /** Delimiter balance, ignoring literals and comments (shared with PatchSandbox). */
     private fun balanced(text: String): Boolean {
-        val stripped = stripLiterals(text)
+        val stripped = CodeText.stripLiteralsAndComments(text)
         if (stripped.count { it == '{' } != stripped.count { it == '}' }) return false
         if (stripped.count { it == '(' } != stripped.count { it == ')' }) return false
         return true
-    }
-
-    private fun stripLiterals(text: String): String {
-        val out = StringBuilder(text.length)
-        var i = 0
-        var inRaw = false
-        var inString = false
-        var inLineComment = false
-        var inBlockComment = false
-
-        while (i < text.length) {
-            val c = text[i]
-            val next = if (i + 1 < text.length) text[i + 1] else '\u0000'
-
-            when {
-                inLineComment -> {
-                    if (c == '\n') { inLineComment = false; out.append(c) }
-                }
-                inBlockComment -> {
-                    if (c == '*' && next == '/') { inBlockComment = false; i++ }
-                }
-                inRaw -> {
-                    if (c == '"' && next == '"' && i + 2 < text.length && text[i + 2] == '"') {
-                        inRaw = false
-                        i += 2
-                    }
-                }
-                inString -> {
-                    if (c == '\\') i++
-                    else if (c == '"') inString = false
-                }
-                c == '/' && next == '/' -> inLineComment = true
-                c == '/' && next == '*' -> { inBlockComment = true; i++ }
-                c == '"' && next == '"' && i + 2 < text.length && text[i + 2] == '"' -> {
-                    inRaw = true
-                    i += 2
-                }
-                c == '"' -> inString = true
-                else -> out.append(c)
-            }
-            i++
-        }
-        return out.toString()
     }
 
     private fun unifiedDiff(path: String, before: String, after: String, find: String, replace: String): String {

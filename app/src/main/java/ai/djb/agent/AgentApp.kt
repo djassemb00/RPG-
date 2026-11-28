@@ -4,12 +4,15 @@ import ai.djb.agent.core.AdbBridge
 import ai.djb.agent.core.BackupManager
 import ai.djb.agent.core.AgentEngine
 import ai.djb.agent.core.EventBus
+import ai.djb.agent.core.HealthCheck
 import ai.djb.agent.core.JsonStore
 import ai.djb.agent.core.LlmClient
 import ai.djb.agent.core.PermissionBroker
 import ai.djb.agent.core.TaskStore
 import ai.djb.agent.core.ProviderRegistry
+import ai.djb.agent.core.PatchSandbox
 import ai.djb.agent.core.SelfCode
+import ai.djb.agent.core.SelfUpgrade
 import ai.djb.agent.core.SettingsStore
 import ai.djb.agent.core.ToolContext
 import ai.djb.agent.core.ToolRegistry
@@ -17,6 +20,7 @@ import ai.djb.agent.core.ToolRegistryHolder
 import ai.djb.agent.tools.ShellBridge
 import android.app.Application
 import java.io.File
+import org.json.JSONObject
 
 /**
  * Minimal service locator. The app is small enough that a manual object graph is
@@ -55,6 +59,18 @@ class AgentApp : Application() {
     lateinit var selfCode: SelfCode
         private set
 
+    /** Closed container: a candidate must pass every check here before promotion. */
+    lateinit var sandbox: PatchSandbox
+        private set
+
+    /** A/B versions and the safety valve that restores the previous stable one. */
+    lateinit var upgrade: SelfUpgrade
+        private set
+
+    /** Startup self-check that feeds the safety valve real faults, not guesses. */
+    lateinit var health: HealthCheck
+        private set
+
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
@@ -68,11 +84,33 @@ class AgentApp : Application() {
         client = LlmClient(settings, providers, bus)
         backup = BackupManager(this, store, settings, providers, tasks, adb)
         selfCode = SelfCode(this, store)
+        sandbox = PatchSandbox(store, settings)
+        upgrade = SelfUpgrade(this, store, settings)
 
-        val context = ToolContext(this, store, settings, permissions, bus, shell, adb, backup, selfCode)
+
+
+        val context = ToolContext(this, store, settings, permissions, bus, shell, adb, backup, selfCode, sandbox, upgrade)
         registry = ToolRegistry(context)
-        ToolRegistryHolder.attach(registry)
         registry.installDefaults()
+        ToolRegistryHolder.attach(registry)
+
+        health = HealthCheck(store, settings, providers)
+
+        // The safety valve fires on its own. A newly promoted version that fails the
+        // startup check twice is reverted without the user having to notice anything.
+        runCatching {
+            val report = health.run()
+            val state = upgrade.healthCheckOnStartup(!report.ok, report.summary())
+            if (state.lastRollbackAt > 0 && state.lastRollbackReason.isNotBlank()) {
+                store.appendLog(
+                    JSONObject().apply {
+                        put("at", System.currentTimeMillis())
+                        put("kind", "upgrade")
+                        put("text", "استعادة تلقائية: " + state.lastRollbackReason)
+                    }.toString()
+                )
+            }
+        }
 
         engine = AgentEngine(
             app = this,
