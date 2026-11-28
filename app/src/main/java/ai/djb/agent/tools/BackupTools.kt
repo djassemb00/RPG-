@@ -58,7 +58,7 @@ class BackupTools {
         )
 
         override suspend fun execute(args: JSONObject, ctx: ToolContext): String {
-            val candidates = java.io.File(ctx.application.cacheDir, "backups")
+            val candidates: List<java.io.File> = java.io.File(ctx.app.cacheDir, "backups")
                 .listFiles()?.toList().orEmpty()
                 .filter { it.extension == "json" }
                 .sortedByDescending { it.lastModified() }
