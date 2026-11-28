@@ -48,7 +48,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ai.djb.agent.core.ProviderPreset
-import ai.djb.agent.core.Role
+import ai.djb.agent.core.AgentPhase
 
 @Composable
 fun ProvidersScreen(
@@ -62,7 +62,7 @@ fun ProvidersScreen(
     onLoadModels: (String) -> Unit,
     onPickModel: (String, String) -> Unit,
     onAutoFix: (String) -> Unit,
-    onSetRole: (String, Role) -> Unit,
+    onSetRole: (String, AgentPhase) -> Unit,
     onSetPlanModel: (String, String) -> Unit,
 ) {
     var editingPlanModel by remember { mutableStateOf<String?>(null) }
@@ -162,7 +162,7 @@ fun ProvidersScreen(
                     Spacer(Modifier.height(6.dp))
                     MonoLabel("الدور:")
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Role.entries.forEach { role ->
+                        AgentPhase.entries.forEach { role ->
                             FilterChip(
                                 selected = slot.role == role,
                                 onClick = { onSetRole(slot.presetId, role) },

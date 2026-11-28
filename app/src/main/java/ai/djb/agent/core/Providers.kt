@@ -11,7 +11,7 @@ import org.json.JSONTokener
  * history, tool schemas, multi-step). Letting those use different models is the
  * single biggest cost lever in an agent loop.
  */
-enum class Role {
+enum class AgentPhase {
     /** Preferred for the first model call of a run: intent + short plan. */
     PLAN,
 
@@ -49,15 +49,15 @@ data class ProviderSlot(
     val successCount: Int = 0,
     val failCount: Int = 0,
     /** Which phase of a run this provider is preferred for. */
-    val role: Role = Role.ANY,
+    val role: AgentPhase = AgentPhase.ANY,
     /** Optional lighter/cheaper model used during planning, falling back to `model`. */
     val planModel: String = "",
 ) {
     val configured: Boolean get() = baseUrl.isNotBlank() && model.isNotBlank() && key.isNotBlank()
 
     /** The model to use for a given phase. */
-    fun modelFor(phase: Role): String = when (phase) {
-        Role.PLAN -> planModel.ifBlank { model }
+    fun modelFor(phase: AgentPhase): String = when (phase) {
+        AgentPhase.PLAN -> planModel.ifBlank { model }
         else -> model
     }
 
@@ -92,7 +92,7 @@ data class ProviderSlot(
             lastFailAt = obj.optLong("last_fail_at"),
             successCount = obj.optInt("success_count"),
             failCount = obj.optInt("fail_count"),
-            role = runCatching { Role.valueOf(obj.optString("role", "ANY")) }.getOrDefault(Role.ANY),
+            role = runCatching { Role.valueOf(obj.optString("role", "ANY")) }.getOrDefault(AgentPhase.ANY),
             planModel = obj.optString("plan_model"),
         )
     }
@@ -249,15 +249,15 @@ class ProviderRegistry(private val store: JsonStore) {
      * `ANY` providers, then everything else as a last-resort fallback — so a routing
      * preference never becomes a single point of failure.
      */
-    fun chainFor(phase: Role): List<ProviderSlot> {
+    fun chainFor(phase: AgentPhase): List<ProviderSlot> {
         val usable = load().filter { it.enabled && it.configured }
         val preferred = usable.filter { it.role == phase }
-        val generic = usable.filter { it.role == Role.ANY }
-        val other = usable.filter { it.role != phase && it.role != Role.ANY }
+        val generic = usable.filter { it.role == AgentPhase.ANY }
+        val other = usable.filter { it.role != phase && it.role != AgentPhase.ANY }
         return (preferred + generic + other).distinctBy { it.presetId }
     }
 
-    fun setRole(presetId: String, role: Role): List<ProviderSlot> {
+    fun setRole(presetId: String, role: AgentPhase): List<ProviderSlot> {
         save(load().map { if (it.presetId == presetId) it.copy(role = role) else it })
         return load()
     }
@@ -269,11 +269,11 @@ class ProviderRegistry(private val store: JsonStore) {
 
     /** Human-readable explanation of how a turn will be routed right now. */
     fun routingSummary(): String {
-        val plan = chainFor(Role.PLAN).firstOrNull()
-        val act = chainFor(Role.ACT).firstOrNull()
+        val plan = chainFor(AgentPhase.PLAN).firstOrNull()
+        val act = chainFor(AgentPhase.ACT).firstOrNull()
         if (plan == null && act == null) return "لا مزوّد مضبوط"
-        val planText = plan?.let { "${it.label} / ${it.modelFor(Role.PLAN)}" } ?: "—"
-        val actText = act?.let { "${it.label} / ${it.modelFor(Role.ACT)}" } ?: "—"
+        val planText = plan?.let { "${it.label} / ${it.modelFor(AgentPhase.PLAN)}" } ?: "—"
+        val actText = act?.let { "${it.label} / ${it.modelFor(AgentPhase.ACT)}" } ?: "—"
         return if (planText == actText) "كل المراحل: $actText" else "تخطيط: $planText · تنفيذ: $actText"
     }
 

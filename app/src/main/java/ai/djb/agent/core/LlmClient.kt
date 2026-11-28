@@ -61,7 +61,7 @@ class LlmClient(
         return emptyList()
     }
 
-    private fun chainForPhase(phase: Role): List<ProviderSlot> {
+    private fun chainForPhase(phase: AgentPhase): List<ProviderSlot> {
         val routed = registry.chainFor(phase)
         if (routed.isNotEmpty()) return routed
         return chain()
@@ -79,9 +79,9 @@ class LlmClient(
     suspend fun chat(
         messages: List<ChatMessage>,
         tools: List<ToolSpec>,
-        phase: Role = Role.ANY,
+        phase: AgentPhase = AgentPhase.ANY,
     ): LlmResponse = withContext(Dispatchers.IO) {
-        val chain = if (phase == Role.ANY) chain() else chainForPhase(phase)
+        val chain = if (phase == AgentPhase.ANY) chain() else chainForPhase(phase)
         if (chain.isEmpty()) {
             throw LlmException("لا يوجد مزوّد مضبوط. افتح الإعدادات ← المزوّدون وأضف مفتاحًا.")
         }

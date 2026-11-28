@@ -137,7 +137,7 @@ class AgentEngine(
 
             // Phase routing: the opening decisions run on the cheap model, tool turns
             // on the strong one. On step 1 there is nothing to execute yet.
-            val phase = if (step == 1) Role.PLAN else Role.ACT
+            val phase = if (step == 1) AgentPhase.PLAN else AgentPhase.ACT
             val response = try {
                 client.chat(messages, registry.specs(), phase)
             } catch (e: Exception) {

@@ -6,7 +6,7 @@ import ai.djb.agent.core.Autonomy
 import ai.djb.agent.core.LogLevel
 import ai.djb.agent.core.ProviderSlot
 import ai.djb.agent.core.Repeat
-import ai.djb.agent.core.Role
+import ai.djb.agent.core.AgentPhase
 import ai.djb.agent.core.ScheduledTask
 import ai.djb.agent.core.Risk
 import ai.djb.agent.services.AgentAccessibilityService
@@ -31,7 +31,7 @@ data class FeedItem(
 )
 
 data class ProviderSlotView(
-    val role: Role = Role.ANY,
+    val role: AgentPhase = AgentPhase.ANY,
     val planModel: String = "",
     val presetId: String,
     val label: String,
@@ -278,7 +278,7 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         }
     }
 
-    fun setProviderRole(presetId: String, role: Role) {
+    fun setProviderRole(presetId: String, role: AgentPhase) {
         app.providers.setRole(presetId, role)
         refreshSettings()
         system("دور المزوّد الآن: ${role.label()} — ${app.client.routingSummary()}")
