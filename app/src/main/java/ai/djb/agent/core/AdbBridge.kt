@@ -1,7 +1,7 @@
 package ai.djb.agent.core
 
-import dev.mobile.dadb.Dadb
-import dev.mobile.dadb.DadbKeyPair
+import dadb.AdbKeyPair
+import dadb.Dadb
 import java.io.File
 import java.security.SecureRandom
 import kotlinx.coroutines.Dispatchers
@@ -76,17 +76,18 @@ class AdbBridge(private val store: JsonStore) {
      * shown to the user as a fingerprint so they can recognise it in the system
      * "Allow USB debugging?" dialog.
      */
-    private fun keyPair(): DadbKeyPair {
+    private fun keyPair(): AdbKeyPair {
         val private = File(store.privateDir(), "adb_key")
         val public = File(store.privateDir(), "adb_key.pub")
         if (!private.exists() || !public.exists()) {
-            val generated = DadbKeyPair.generate()
-            private.writeBytes(generated.privateKeyPem.toByteArray())
-            public.writeBytes(generated.publicKeyPem.toByteArray())
-            // Lock down the key file where the platform allows it.
-            runCatching { private.setReadable(false, false); private.setReadable(true, true) }
+            AdbKeyPair.generate(private, public)
+            // Lock the private half down where the platform allows it.
+            runCatching {
+                private.setReadable(false, false)
+                private.setReadable(true, true)
+            }
         }
-        return DadbKeyPair.read(private, public)
+        return AdbKeyPair.read(private, public)
     }
 
     fun keyFingerprint(): String = runCatching {
@@ -135,7 +136,7 @@ class AdbBridge(private val store: JsonStore) {
         val dadb = connection ?: return@withContext null
         try {
             val response = dadb.shell(command)
-            ShellResult(response.exitCode, response.output, response.error)
+            ShellResult(response.exitCode, response.output, response.errorOutput)
         } catch (e: Exception) {
             ShellResult(-1, "", e.message ?: e.javaClass.simpleName)
         }
