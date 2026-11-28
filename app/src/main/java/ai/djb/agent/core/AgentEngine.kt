@@ -127,6 +127,9 @@ class AgentEngine(
         )
 
         bus.emit(AgentEvent.Log("المهمة: $task"))
+        // Run delimiter: the pattern miner groups tool calls between task lines, so
+        // repetition inside one task never looks like a habit.
+        store.appendLog(logLine("task", task.take(300)))
 
         var step = 0
         val maxSteps = settings.maxSteps

@@ -36,6 +36,7 @@ fun SettingsScreen(
     onOpenAdb: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
     onOpenBackup: () -> Unit = {},
+    onOpenSelfCode: () -> Unit = {},
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
@@ -204,6 +205,14 @@ fun SettingsScreen(
                         MonoLabel("صدّر المهارات والذاكرة والإعدادات أو استوردها")
                     }
                     TextButton(onClick = onOpenBackup) { Text("فتح") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("كودي وتعلّمي", fontWeight = FontWeight.SemiBold)
+                        MonoLabel("اقتراحات مهارات من تكرارك + رقع على كود التطبيق")
+                    }
+                    TextButton(onClick = onOpenSelfCode) { Text("فتح") }
                 }
             }
         }

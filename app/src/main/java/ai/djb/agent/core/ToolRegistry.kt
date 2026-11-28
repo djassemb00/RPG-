@@ -6,7 +6,9 @@ import ai.djb.agent.tools.AdbTools
 import ai.djb.agent.tools.BackupTools
 import ai.djb.agent.tools.AppControlTools
 import ai.djb.agent.tools.MemoryTools
+import ai.djb.agent.tools.PatternTools
 import ai.djb.agent.tools.ScheduleTools
+import ai.djb.agent.tools.SelfCodeTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
 import ai.djb.agent.tools.SystemTools
@@ -97,6 +99,17 @@ class ToolRegistry(private val ctx: ToolContext) {
         // --- moving what it learned between installs ---
         register(BackupTools.ExportBackup())
         register(BackupTools.InspectBackup())
+
+        // --- noticing its own repetition ---
+        register(PatternTools.SuggestPatterns())
+        register(PatternTools.MineSkill())
+
+        // --- reading and patching its own source ---
+        register(SelfCodeTools.ListSource())
+        register(SelfCodeTools.ReadSource())
+        register(SelfCodeTools.SearchSource())
+        register(SelfCodeTools.ProposePatch())
+        register(SelfCodeTools.ListPatches())
 
         // --- vision: see the screen, not just its text ---
         register(VisionTools.Look())

@@ -43,7 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP }
+private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP, SELFCODE }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -181,6 +181,7 @@ fun AgentRoot(app: AgentApp) {
                     onOpenAdb = { tab = Tab.ADB },
                     onOpenLogs = { tab = Tab.LOGS },
                     onOpenBackup = { vm.refreshBackupCounts(); tab = Tab.BACKUP },
+                    onOpenSelfCode = { vm.refreshSelfCode(); tab = Tab.SELFCODE },
                     onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision ->
                         vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision)
                         settingsVersion++
@@ -209,6 +210,16 @@ fun AgentRoot(app: AgentApp) {
                         onImport = { importPicker.launch(arrayOf("application/json", "text/plain", "*/*")) },
                     )
                 }
+                Tab.SELFCODE -> SelfCodeScreen(
+                    onBack = { tab = Tab.SETTINGS },
+                    patterns = state.patterns,
+                    patches = state.patches,
+                    sourceCount = state.sourceCount,
+                    message = state.selfCodeMessage,
+                    onRefresh = { vm.refreshSelfCode() },
+                    onExportPatch = { id -> vm.exportPatch(id) },
+                    onAdoptPattern = { pattern -> vm.adoptPattern(pattern) },
+                )
                 Tab.LOGS -> LogsScreen(vm)
             }
         }

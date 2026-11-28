@@ -85,6 +85,10 @@ data class UiState(
     val backupMessage: String? = null,
     val backupCounts: BackupCounts = BackupCounts(),
     val lastBackupPath: String? = null,
+    val patterns: List<PatternView> = emptyList(),
+    val patches: List<PatchView> = emptyList(),
+    val sourceCount: Int = 0,
+    val selfCodeMessage: String? = null,
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -496,6 +500,78 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             _state.value = _state.value.copy(adbBusy = false, adbResult = text.trim())
             system(text.trim())
         }
+    }
+
+    fun refreshSelfCode() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val miner = ai.djb.agent.core.PatternMiner(app.store)
+            val patterns = miner.suggestions().map {
+                PatternView(it.tools.joinToString(">"), it.tools, it.occurrences)
+            }
+            val patches = app.selfCode.listPatches().map { p ->
+                PatchView(
+                    id = p.id,
+                    file = p.file,
+                    reason = p.reason,
+                    createdAt = p.createdAt,
+                    applied = p.applied,
+                    diff = app.selfCode.diffOf(p.id),
+                )
+            }
+            val sources = app.selfCode.list().size
+            _state.value = _state.value.copy(
+                patterns = patterns,
+                patches = patches,
+                sourceCount = sources,
+            )
+        }
+    }
+
+    /** Turns a noticed pattern into a real skill, reusing the authoring path. */
+    fun adoptPattern(pattern: PatternView) {
+        viewModelScope.launch {
+            val suggested = "auto_" + pattern.tools.last().removePrefix("adb_").take(24)
+            val args = org.json.JSONObject().apply {
+                put("name", suggested)
+                put("approach", pattern.tools.joinToString(">"))
+                put("description", "مهارة مستخرجة من ${pattern.occurrences} تشغيلات متشابهة.")
+            }
+            val registry = ai.djb.agent.core.ToolRegistryHolder.tools()
+            val result = if (registry != null) {
+                registry.invoke(
+                    "mine_skill", args, ai.djb.agent.core.Autonomy.BALANCED,
+                ) { _, _ -> true }
+            } else {
+                "ERROR: السجل غير جاهز."
+            }
+            _state.value = _state.value.copy(selfCodeMessage = result)
+            refreshSelfCode()
+            system(result)
+        }
+    }
+
+    /** Shares a patch's diff file so it can be applied to the repository. */
+    fun exportPatch(id: String) {
+        val diff = app.selfCode.diffOf(id) ?: run {
+            _state.value = _state.value.copy(selfCodeMessage = "الرقعة غير موجودة.")
+            return
+        }
+        val file = java.io.File(app.cacheDir, "patches/$id.diff").apply {
+            parentFile?.mkdirs()
+            writeText(diff)
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(app, "ai.djb.agent.files", file)
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "text/x-diff"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        app.startActivity(
+            android.content.Intent.createChooser(intent, "مشاركة الرقعة").apply {
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+        app.selfCode.markApplied(id)
     }
 
     fun refreshBackupCounts() {

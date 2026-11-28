@@ -1,0 +1,41 @@
+name: Bundle source snapshot
+
+# The self-editing feature lets the agent read and propose patches against a snapshot
+# of the app's own Kotlin sources. It must therefore be a *fresh* snapshot in every
+# APK, so it is rebuilt here instead of being committed (source in source control).
+on:
+  push:
+    branches: [arena/b5620ef9-rpg, main]
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rebuild the source snapshot
+        run: |
+          rm -rf app/src/main/assets/source
+          mkdir -p app/src/main/assets/source
+          cd app/src/main/java
+          find . -name '*.kt' | while read -r f; do
+            out="../../assets/source/$(echo "$f" | sed 's|^\./||; s|/|__|g')"
+            cp "$f" "$out"
+          done
+          cd "$GITHUB_WORKSPACE"
+          ls app/src/main/assets/source | head -5
+          echo "files: $(ls app/src/main/assets/source | wc -l)"
+
+      - name: Commit if changed
+        run: |
+          git config user.name "djb-ai-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add -A app/src/main/assets/source
+          if git diff --cached --quiet; then
+            echo "snapshot already current"
+          else
+            git commit -m "chore(source): refresh self-edit snapshot [skip ci]"
+            git push
+          fi

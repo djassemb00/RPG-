@@ -9,6 +9,7 @@ import ai.djb.agent.core.LlmClient
 import ai.djb.agent.core.PermissionBroker
 import ai.djb.agent.core.TaskStore
 import ai.djb.agent.core.ProviderRegistry
+import ai.djb.agent.core.SelfCode
 import ai.djb.agent.core.SettingsStore
 import ai.djb.agent.core.ToolContext
 import ai.djb.agent.core.ToolRegistry
@@ -50,6 +51,10 @@ class AgentApp : Application() {
     lateinit var backup: BackupManager
         private set
 
+    /** Read-only view of own sources + staging area for proposed patches. */
+    lateinit var selfCode: SelfCode
+        private set
+
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
@@ -62,8 +67,9 @@ class AgentApp : Application() {
         providers = ProviderRegistry(store).also { it.migrateLegacySettings(settings) }
         client = LlmClient(settings, providers, bus)
         backup = BackupManager(this, store, settings, providers, tasks, adb)
+        selfCode = SelfCode(this, store)
 
-        val context = ToolContext(this, store, settings, permissions, bus, shell, adb, backup)
+        val context = ToolContext(this, store, settings, permissions, bus, shell, adb, backup, selfCode)
         registry = ToolRegistry(context)
         ToolRegistryHolder.attach(registry)
         registry.installDefaults()
