@@ -39,6 +39,7 @@ fun SettingsScreen(
     onOpenSelfCode: () -> Unit = {},
     onOpenUpgrade: () -> Unit = {},
     onOpenGrowth: () -> Unit = {},
+    onOpenLearning: () -> Unit = {},
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
@@ -231,6 +232,14 @@ fun SettingsScreen(
                         MonoLabel("إصلاح ذاتي مبني على سجلّك + ترقية استقلالية بالأدلة")
                     }
                     TextButton(onClick = onOpenGrowth) { Text("فتح") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("التعلّم", fontWeight = FontWeight.SemiBold)
+                        MonoLabel("دروس من نجاحاتي + تصدير بيانات تدريب JSONL")
+                    }
+                    TextButton(onClick = onOpenLearning) { Text("فتح") }
                 }
             }
         }

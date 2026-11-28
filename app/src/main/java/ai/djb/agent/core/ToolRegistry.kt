@@ -12,6 +12,7 @@ import ai.djb.agent.tools.SelfCodeTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
 import ai.djb.agent.tools.GrowthTools
+import ai.djb.agent.tools.LearningTools
 import ai.djb.agent.tools.SystemTools
 import ai.djb.agent.tools.UpgradeTools
 import ai.djb.agent.tools.VisionTools
@@ -112,6 +113,12 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(SelfCodeTools.SearchSource())
         register(SelfCodeTools.ProposePatch())
         register(SelfCodeTools.ListPatches())
+
+        // --- learning: compress successes into lessons, export them as training data ---
+        register(LearningTools.LearnLesson())
+        register(LearningTools.ListLessons())
+        register(LearningTools.TrainingStats())
+        register(LearningTools.ExportTraining())
 
         // --- growth: judge itself from its own record ---
         register(GrowthTools.Assess())

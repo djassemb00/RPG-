@@ -4,4 +4,5 @@
     <cache-path name="backups" path="backups/" />
     <cache-path name="screens" path="screens/" />
     <cache-path name="patches" path="patches/" />
+    <cache-path name="training" path="training/" />
 </paths>

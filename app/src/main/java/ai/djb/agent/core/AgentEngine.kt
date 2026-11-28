@@ -27,6 +27,8 @@ class AgentEngine(
     private val registry: ToolRegistry,
     private val client: LlmClient,
     private val permissions: PermissionBroker,
+    /** Lessons distilled from earlier successful runs, injected into the plan prompt. */
+    private val lessons: LessonLearner,
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -117,6 +119,7 @@ class AgentEngine(
             toolNames = registry.specs().map { it.name },
             installedSkillNames = skills.map { it.name },
             accessibilityOn = accessibilityOn,
+            lessonBlock = lessons.promptBlock(),
         )
 
         val messages = ArrayList<ChatMessage>()

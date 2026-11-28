@@ -43,7 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP, SELFCODE, UPGRADE, GROWTH }
+private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP, SELFCODE, UPGRADE, GROWTH, LEARNING }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -184,6 +184,7 @@ fun AgentRoot(app: AgentApp) {
                     onOpenSelfCode = { vm.refreshSelfCode(); tab = Tab.SELFCODE },
                     onOpenUpgrade = { vm.refreshUpgrade(); vm.runHealthCheck(); tab = Tab.UPGRADE },
                     onOpenGrowth = { vm.refreshGrowth(); tab = Tab.GROWTH },
+                    onOpenLearning = { vm.refreshLearning(); tab = Tab.LEARNING },
                     onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision ->
                         vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision)
                         settingsVersion++
@@ -236,6 +237,14 @@ fun AgentRoot(app: AgentApp) {
                     onRefresh = { vm.refreshGrowth() },
                     onImprove = { apply -> vm.runGrowth(apply) },
                     onGraduate = { apply -> vm.graduateSelf(apply) },
+                )
+                Tab.LEARNING -> LearningScreen(
+                    onBack = { tab = Tab.SETTINGS },
+                    state = state.learning,
+                    onRefresh = { vm.refreshLearning() },
+                    onLearn = { vm.learnLesson() },
+                    onExport = { vm.exportTraining() },
+                    onClear = { vm.clearLessons() },
                 )
                 Tab.LOGS -> LogsScreen(vm)
             }

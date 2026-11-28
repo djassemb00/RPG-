@@ -12,6 +12,7 @@ import ai.djb.agent.core.Risk
 import ai.djb.agent.services.AgentAccessibilityService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -91,6 +92,7 @@ data class UiState(
     val selfCodeMessage: String? = null,
     val upgradeState: UpgradeViewState = UpgradeViewState(),
     val growth: GrowthViewState = GrowthViewState(),
+    val learning: LearningViewState = LearningViewState(),
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -502,6 +504,75 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             _state.value = _state.value.copy(adbBusy = false, adbResult = text.trim())
             system(text.trim())
         }
+    }
+
+    fun refreshLearning() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val stats = app.training.stats()
+            _state.value = _state.value.copy(
+                learning = _state.value.learning.copy(
+                    lessons = app.lessons.lessons().takeLast(12).map { it.text },
+                    examples = stats.optInt("examples"),
+                    avgSteps = stats.optDouble("avg_steps"),
+                )
+            )
+        }
+    }
+
+    fun learnLesson() {
+        _state.value = _state.value.copy(learning = _state.value.learning.copy(busy = true))
+        viewModelScope.launch {
+            val lesson = app.lessons.learnFromLastRun()
+            _state.value = _state.value.copy(
+                learning = _state.value.learning.copy(
+                    busy = false,
+                    message = lesson?.let { "درس جديد: ${it.text}" }
+                        ?: "لم أستخرج درسًا — المهمة الأخيرة قصيرة أو لا يوجد سجل.",
+                )
+            )
+            refreshLearning()
+        }
+    }
+
+    /** Exports fine-tuning JSONL and offers the share sheet. */
+    fun exportTraining(limit: Int = 200) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val examples = app.training.examples().takeLast(limit)
+            if (examples.isEmpty()) {
+                _state.value = _state.value.copy(
+                    learning = _state.value.learning.copy(message = "لا أمثلة صالحة بعد.")
+                )
+                return@launch
+            }
+            val dir = java.io.File(app.cacheDir, "training").apply { mkdirs() }
+            val file = java.io.File(dir, "djb-training.jsonl")
+            file.writeText(app.training.toJsonl(examples, app.settings.agentName))
+
+            withContext(kotlinx.coroutines.Dispatchers.Main) {
+                val uri = androidx.core.content.FileProvider.getUriForFile(app, "ai.djb.agent.files", file)
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "application/jsonl"
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                app.startActivity(
+                    android.content.Intent.createChooser(intent, "مشاركة بيانات التدريب").apply {
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+                _state.value = _state.value.copy(
+                    learning = _state.value.learning.copy(
+                        message = "جاهز: ${examples.size} مثالًا (${file.length() / 1024} كيلوبايت)",
+                    )
+                )
+            }
+            refreshLearning()
+        }
+    }
+
+    fun clearLessons() {
+        app.lessons.clear()
+        refreshLearning()
     }
 
     fun refreshGrowth() {

@@ -220,6 +220,8 @@ class ToolContext(
     val sandbox: PatchSandbox,
     val upgrade: SelfUpgrade,
     val growth: GrowthEngine,
+    val lessons: LessonLearner,
+    val training: TrainingData,
 )
 
 interface AgentTool {

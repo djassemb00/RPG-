@@ -7,6 +7,8 @@ import ai.djb.agent.core.EventBus
 import ai.djb.agent.core.GrowthEngine
 import ai.djb.agent.core.HealthCheck
 import ai.djb.agent.core.JsonStore
+import ai.djb.agent.core.LessonLearner
+import ai.djb.agent.core.TrainingData
 import ai.djb.agent.core.LlmClient
 import ai.djb.agent.core.PermissionBroker
 import ai.djb.agent.core.TaskStore
@@ -76,6 +78,14 @@ class AgentApp : Application() {
     lateinit var growth: GrowthEngine
         private set
 
+    /** Distils successful runs into one-line lessons injected into future plans. */
+    lateinit var lessons: LessonLearner
+        private set
+
+    /** Exports verified successful runs as fine-tuning JSONL. */
+    lateinit var training: TrainingData
+        private set
+
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
@@ -95,10 +105,12 @@ class AgentApp : Application() {
         // Constructed before ToolContext because tools reach it: leaving it unset would
         // mean an uninitialised lateinit crash on the first launch after install.
         growth = GrowthEngine(store, settings, sandbox, client)
+        lessons = LessonLearner(store, client)
+        training = TrainingData(store)
 
         val context = ToolContext(
             this, store, settings, permissions, bus, shell, adb, backup,
-            selfCode, sandbox, upgrade, growth,
+            selfCode, sandbox, upgrade, growth, lessons, training,
         )
         registry = ToolRegistry(context)
         registry.installDefaults()
@@ -128,6 +140,7 @@ class AgentApp : Application() {
             registry = registry,
             client = client,
             permissions = permissions,
+            lessons = lessons,
         )
 
         // Re-arm anything scheduled; cheap and idempotent.

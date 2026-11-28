@@ -12,6 +12,7 @@ object PromptBuilder {
         toolNames: List<String>,
         installedSkillNames: List<String>,
         accessibilityOn: Boolean,
+        lessonBlock: String = "",
     ): String {
         val rules = store.readRules()
         val memory = store.readMemory()
@@ -72,6 +73,8 @@ $memoryBlock
 
 ## قواعد المستخدم
 $rulesBlock
+
+${lessonBlock.ifBlank { "" }}
 
 ${settings.extraInstruction.takeIf { it.isNotBlank() }?.let { "\n## تعليمات المستخدم الإضافية\n$it" }.orEmpty()}
 """.trim()
