@@ -82,11 +82,13 @@ class ScheduleTools {
         }
     }
 
-    class ListScheduledTask(override val spec: ToolSpec = ToolSpec(
-        name = "list_scheduled_tasks",
-        description = "اعرض المهام المجدولة وحالتها وآخر نتيجة.",
-        risk = Risk.LOW,
-    )) : AgentTool {
+    class ListScheduledTask(private val stamp: SimpleDateFormat) : AgentTool {
+        override val spec = ToolSpec(
+            name = "list_scheduled_tasks",
+            description = "اعرض المهام المجدولة وحالتها وآخر نتيجة.",
+            risk = Risk.LOW,
+        )
+
         override suspend fun execute(args: JSONObject, ctx: ToolContext): String {
             val app = ctx.app as ai.djb.agent.AgentApp
             val tasks = app.tasks.load()

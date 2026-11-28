@@ -78,7 +78,7 @@ class ToolRegistry(private val ctx: ToolContext) {
         // --- scheduling its own future work ---
         val stamp = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault())
         register(ScheduleTools.ScheduleTask(stamp))
-        register(ScheduleTools.ListScheduledTask())
+        register(ScheduleTools.ListScheduledTask(stamp))
         register(ScheduleTools.CancelScheduledTask())
 
         // --- self-modification: authoring & running its own skills ---
