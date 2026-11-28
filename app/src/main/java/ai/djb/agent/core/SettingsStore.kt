@@ -86,6 +86,24 @@ class SettingsStore(private val store: JsonStore) {
         get() = json().optString("cloud_client").ifBlank { "primary" }
         set(value) = put("cloud_client", value.trim().ifBlank { "primary" })
 
+    /** Fine-grained GitHub token with Actions + Contents write. Never exported. */
+    var githubToken: String
+        get() = json().optString("github_token")
+        set(value) = put("github_token", value.trim())
+
+    /** owner/repo that holds this app's source. */
+    var githubRepo: String
+        get() = json().optString("github_repo")
+        set(value) = put("github_repo", value.trim().removePrefix("https://github.com/").trimEnd('/'))
+
+    var githubBranch: String
+        get() = json().optString("github_branch", "main")
+        set(value) = put("github_branch", value.trim().ifBlank { "main" })
+
+    var githubWorkflow: String
+        get() = json().optString("github_workflow", "self-build.yml")
+        set(value) = put("github_workflow", value.trim().ifBlank { "self-build.yml" })
+
     var extraInstruction: String
         get() = json().optString("extra_instruction")
         set(value) = put("extra_instruction", value)
@@ -102,5 +120,6 @@ class SettingsStore(private val store: JsonStore) {
     /** Safe for logs / UI, never includes the key. */
     fun summary(): String =
         "model=$model base=$apiBaseUrl steps=$maxSteps autonomy=${autonomy.name} " +
-            "selfImprove=$selfImprove cloud=${if (cloudUrl.isNotBlank()) "on" else "off"}"
+            "selfImprove=$selfImprove cloud=${if (cloudUrl.isNotBlank()) "on" else "off"} " +
+            "selfBuild=${if (githubToken.isNotBlank()) "on" else "off"}"
 }

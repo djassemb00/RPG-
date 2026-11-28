@@ -96,6 +96,15 @@ class BackupManager(
 
             // Cloud worker URL only — never the shared token, for the same reason the
             // ADB private key stays behind: a backup file is meant to be shareable.
+            // Repository name only; the GitHub token is a write credential and is
+            // excluded exactly like the API keys and the ADB private key.
+            put("github", JSONObject().apply {
+                if (settings.githubRepo.isNotBlank()) {
+                    put("repo", settings.githubRepo)
+                    put("branch", settings.githubBranch)
+                }
+            })
+
             put("cloud", JSONObject().apply {
                 if (settings.cloudUrl.isNotBlank()) {
                     put("url", settings.cloudUrl)

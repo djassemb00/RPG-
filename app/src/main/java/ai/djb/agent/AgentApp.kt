@@ -4,6 +4,7 @@ import ai.djb.agent.core.AdbBridge
 import ai.djb.agent.core.BackupManager
 import ai.djb.agent.core.AgentEngine
 import ai.djb.agent.core.EventBus
+import ai.djb.agent.core.GitHubBridge
 import ai.djb.agent.core.GrowthEngine
 import ai.djb.agent.core.HealthCheck
 import ai.djb.agent.core.JsonStore
@@ -96,6 +97,10 @@ class AgentApp : Application() {
     lateinit var cloud: CloudBridge
         private set
 
+    /** The build farm: the only route to a capability the APK doesn't have yet. */
+    lateinit var github: GitHubBridge
+        private set
+
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
@@ -119,10 +124,11 @@ class AgentApp : Application() {
         training = TrainingData(store)
         web = WebBridge()
         cloud = CloudBridge(settings)
+        github = GitHubBridge(settings)
 
         val context = ToolContext(
             this, store, settings, permissions, bus, shell, adb, backup,
-            selfCode, sandbox, upgrade, growth, lessons, training, web, cloud,
+            selfCode, sandbox, upgrade, growth, lessons, training, web, cloud, github,
         )
         registry = ToolRegistry(context)
         registry.installDefaults()

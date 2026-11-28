@@ -224,6 +224,7 @@ class ToolContext(
     val training: TrainingData,
     val web: WebBridge,
     val cloud: CloudBridge,
+    val github: GitHubBridge,
 )
 
 interface AgentTool {

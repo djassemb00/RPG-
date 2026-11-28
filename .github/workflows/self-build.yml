@@ -1,0 +1,146 @@
+name: self-build
+
+# Triggered by the agent from inside the app when it wants to try a code change.
+# Flow: apply the staged files -> build -> read the real compiler output -> on success
+# bump the version and publish; on failure report the exact errors back to the phone.
+#
+# Nothing is published unless the whole build is green, so a bad self-edit can never
+# replace the working APK the user is running.
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why the agent is changing itself"
+        required: true
+      files:
+        description: "JSON: [{path, content_base64}]"
+        required: true
+      bump:
+        description: "auto | minor | none"
+        default: auto
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Apply and build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply staged files
+        env:
+          FILES: ${{ inputs.files }}
+        run: |
+          python3 - <<'PY'
+          import base64, json, os, pathlib, sys
+          raw = os.environ["FILES"]
+          items = json.loads(raw)
+          allowed_roots = ("app/src/main/java/ai/djb/agent/", "app/src/main/res/values/", "app/src/main/AndroidManifest.xml")
+          forbidden = ("PatchSandbox.kt", "SelfUpgrade.kt", "PermissionBroker.kt", "BackupManager.kt")
+          changed = []
+          for item in items:
+              path = item["path"].lstrip("/")
+              # The workflow is the last line of defence: it re-checks what the phone
+              # already checked, because a compromised client must not be able to write
+              # outside the guarded area.
+              if not path.startswith(allowed_roots) or ".." in path:
+                  sys.exit(f"refused path: {path}")
+              if any(path.endswith(f) for f in forbidden):
+                  sys.exit(f"refused protected file: {path}")
+              content = base64.b64decode(item["content_base64"]).decode("utf-8")
+              target = pathlib.Path(path)
+              target.parent.mkdir(parents=True, exist_ok=True)
+              target.write_text(content)
+              changed.append(path)
+          pathlib.Path("self-build-files.txt").write_text("\n".join(changed))
+          print("applied:", changed)
+          PY
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Bundle source snapshot
+        run: |
+          rm -rf app/src/main/assets/source && mkdir -p app/src/main/assets/source
+          cd app/src/main/java
+          find . -name '*.kt' -print0 | while IFS= read -r -d '' f; do
+            cp "$f" "../assets/source/$(echo "${f#./}" | sed 's|/|__|g')"
+          done
+
+      - name: Build
+        id: build
+        run: |
+          set -o pipefail
+          gradle :app:assembleDebug --no-daemon 2>&1 | tee build.log
+
+      # The phone reads this file to know what to fix. Only compiler errors, trimmed.
+      - name: Report result
+        if: always()
+        run: |
+          mkdir -p report
+          if [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo '{"ok":true,"errors":[]}' > report/result.json
+          else
+            python3 - <<'PY'
+          import json, re, pathlib
+          text = pathlib.Path("build.log").read_text(errors="replace")
+          errors = [l.strip() for l in text.splitlines() if re.match(r"^e: ", l.strip())]
+          pathlib.Path("report/result.json").write_text(
+              json.dumps({"ok": False, "errors": errors[:40]}, ensure_ascii=False, indent=2)
+          )
+          print("\n".join(errors[:40]))
+          PY
+          fi
+          cp report/result.json result.json
+          { echo "## self-build: ${{ inputs.reason }}"; echo; echo '```'; cat result.json; echo '```'; } > SELF_BUILD_REPORT.md
+          git config user.name "djb-ai-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add SELF_BUILD_REPORT.md || true
+          git commit -m "ci: self-build report [skip ci]" || true
+          git push || true
+
+      - name: Bump version on success
+        if: steps.build.outcome == 'success'
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          p = pathlib.Path("app/build.gradle.kts")
+          s = p.read_text()
+          code = int(re.search(r"versionCode = (\d+)", s).group(1)) + 1
+          name = re.search(r'versionName = "(\d+)\.(\d+)\.(\d+)"', s)
+          major, minor, patch = (int(x) for x in name.groups())
+          s = re.sub(r"versionCode = \d+", f"versionCode = {code}", s)
+          s = re.sub(r'versionName = "[^"]+"', f'versionName = "{major}.{minor}.{patch + 1}"', s)
+          p.write_text(s)
+          print(f"version -> {major}.{minor}.{patch + 1} ({code})")
+          PY
+          git config user.name "djb-ai-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add app/build.gradle.kts
+          git commit -m "chore: bump version after self-build (${{ inputs.reason }}) [skip ci]" || true
+          git push || true
+
+      - name: Publish green APK
+        if: steps.build.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -n 1)
+          gh release upload djb-ai-debug "$APK" --clobber
+          echo "published $APK"
+
+      - name: Fail the run if the build failed
+        if: steps.build.outcome != 'success'
+        run: exit 1

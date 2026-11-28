@@ -153,7 +153,14 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             adbLastError = app.adb.config().lastError,
             visionEnabled = s.visionEnabled,
             autoLearn = s.autoLearn,
-            cloud = _state.value.cloud.copy(url = s.cloudUrl, token = s.cloudToken, clientId = s.cloudClientId),
+            cloud = _state.value.cloud.copy(
+                url = s.cloudUrl,
+                token = s.cloudToken,
+                clientId = s.cloudClientId,
+                githubToken = s.githubToken,
+                githubRepo = s.githubRepo,
+                githubBranch = s.githubBranch,
+            ),
             cloudConfigured = s.cloudUrl.isNotBlank() && s.cloudToken.isNotBlank(),
             providerChain = app.client.describeChain(),
             configured = app.client.hasUsableProvider(),
@@ -526,6 +533,24 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
                 message = "حُفظت الإعدادات.",
             ),
             cloudConfigured = app.cloud.isConfigured(),
+        )
+    }
+
+    fun saveGitHub(token: String, repo: String, branch: String) {
+        app.settings.githubToken = token
+        app.settings.githubRepo = repo
+        app.settings.githubBranch = branch
+        _state.value = _state.value.copy(
+            cloud = _state.value.cloud.copy(
+                githubToken = app.settings.githubToken,
+                githubRepo = app.settings.githubRepo,
+                githubBranch = app.settings.githubBranch,
+                message = if (app.github.isConfigured()) {
+                    "حُفظت إعدادات البناء. المستودع: ${app.settings.githubRepo}"
+                } else {
+                    "حُفظ، لكن البناء يحتاج توكنًا ومستودعًا معًا."
+                },
+            )
         )
     }
 

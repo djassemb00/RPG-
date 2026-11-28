@@ -26,6 +26,8 @@ class SelfCode(private val context: Context, private val store: JsonStore) {
         private const val PATCH_DIR = "patches"
         private const val LOG_FILE = "selfcode_log.json"
         private const val MAX_READ_BYTES = 60_000
+        private const val WRITE_DIR = "writes"
+        private const val BUILD_FILE = "last_build.json"
     }
 
     data class SourceFile(
@@ -172,6 +174,104 @@ class SelfCode(private val context: Context, private val store: JsonStore) {
         runCatching { File(File(store.privateDir(), PATCH_DIR), "$id.diff").readText() }.getOrNull()
 
     fun diffDir(): File = File(store.privateDir(), PATCH_DIR).apply { mkdirs() }
+
+    // ---- writing to the real repository (the only path to a new capability) ----
+
+    /**
+     * Paths are a hard whitelist. A self-modifying agent that can write anywhere can
+     * write a manifest permission, a signing config, or the very files that guard it —
+     * so writes are limited to Kotlin sources and string resources under `app/src/main`.
+     */
+    private val allowedPatterns = listOf(
+        Regex("^app/src/main/java/ai/djb/agent/.+\\.kt$"),
+        Regex("^app/src/main/res/values/.+\\.xml$"),
+        Regex("^app/src/main/AndroidManifest\\.xml$"),
+    )
+
+    /** Files a patch may never touch, even inside the allowed folders. */
+    private val forbidden = listOf(
+        "core/PatchSandbox.kt",
+        "core/SelfUpgrade.kt",
+        "core/PermissionBroker.kt",
+        "core/BackupManager.kt",
+        "ui/UpgradeScreen.kt",
+    )
+
+    fun writeBlockedReason(path: String): String? {
+        val clean = path.removePrefix("/")
+        if (clean.contains("..")) return "مسارات نسبية مرفوضة."
+        if (allowedPatterns.none { it.matches(clean) }) {
+            return "المسموح فقط: كود كوتلن داخل ai/djb/agent، أو نصوص values، أو المانيفست."
+        }
+        if (forbidden.any { clean.endsWith(it) }) {
+            return "هذا الملف يحمي الوكيل نفسه — تعديله ممنوع من التطبيق."
+        }
+        return null
+    }
+
+    /**
+     * Writes a full file over Bluetooth/USB-debugged ADB (`/sdcard`) — no root needed and
+     * no repository token. The content is validated first: if it cannot parse, it is not
+     * written at all, because a half-written source file breaks the next build.
+     */
+    fun stageFullWrite(path: String, content: String): Result<Unit> {
+        writeBlockedReason(path)?.let { return Result.failure(IllegalArgumentException(it)) }
+        if (content.length < 80) {
+            return Result.failure(IllegalArgumentException("المحتوى قصير جدًا — رفض الكتابة."))
+        }
+        if (!balanced(content)) {
+            return Result.failure(
+                IllegalArgumentException("الكود غير متوازن الأقواس — لم يُكتب شيء.")
+            )
+        }
+        if (CodeText.hasNestedCommentTrap(content)) {
+            return Result.failure(IllegalArgumentException("تعليق مفتوح بلا إغلاق — رُفض."))
+        }
+        if (content.contains("uses-permission") && !path.endsWith("AndroidManifest.xml")) {
+            return Result.failure(IllegalArgumentException("إضافة أذونات مسموحة في المانيفست فقط."))
+        }
+
+        val dir = File(store.privateDir(), WRITE_DIR).apply { mkdirs() }
+        val fileName = path.trim('/').split('/').joinToString("__") { it }
+        val target = File(dir, fileName)
+        target.writeText(content)
+        recordWrite(fileName, path.trim('/'))
+        return Result.success(Unit)
+    }
+
+    /**
+     * Files written but not yet published. The flattened name is reverse-mapped through
+     * the snapshot index, because a naive "_" to "/" swap would corrupt "SelfCode.kt".
+     */
+    fun stagedWrites(): List<Pair<String, File>> {
+        val dir = File(store.privateDir(), WRITE_DIR)
+        val index = readWriteIndex()
+        return dir.listFiles().orEmpty()
+            .filter { it.extension == "kt" || it.extension == "xml" }
+            .mapNotNull { file -> index[file.name]?.let { path -> path to file } }
+            .sortedBy { it.first }
+    }
+
+    private fun indexFile() = File(store.privateDir(), "$WRITE_DIR/index.json")
+
+    private fun readWriteIndex(): Map<String, String> {
+        val out = LinkedHashMap<String, String>()
+        val obj = runCatching { JSONObject(indexFile().readText()) }.getOrNull() ?: return out
+        val keys = obj.keys()
+        while (keys.hasNext()) {
+            val k = keys.next()
+            out[k] = obj.optString(k)
+        }
+        return out
+    }
+
+    private fun recordWrite(fileName: String, path: String) {
+        val index = readWriteIndex().toMutableMap()
+        index[fileName] = path
+        indexFile().writeText(JSONObject(index as Map<String, String>).toString(2))
+    }
+
+    fun stagedWriteContent(file: File): String = runCatching { file.readText() }.getOrDefault("")
 
     /** Marks a patch as applied, for the case where the user applied it in the repo. */
     fun markApplied(id: String) {

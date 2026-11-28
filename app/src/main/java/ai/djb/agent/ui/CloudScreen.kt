@@ -42,10 +42,14 @@ fun CloudScreen(
     onSave: (String, String, String) -> Unit,
     onProbe: () -> Unit,
     onPush: () -> Unit,
+    onSaveGitHub: (String, String, String) -> Unit,
 ) {
     var url by remember(state.url) { mutableStateOf(state.url) }
     var token by remember(state.token) { mutableStateOf(state.token) }
     var client by remember(state.clientId) { mutableStateOf(state.clientId) }
+    var ghToken by remember(state.githubToken) { mutableStateOf(state.githubToken) }
+    var ghRepo by remember(state.githubRepo) { mutableStateOf(state.githubRepo) }
+    var ghBranch by remember(state.githubBranch) { mutableStateOf(state.githubBranch) }
 
     Scaffold(
         topBar = {
@@ -140,6 +144,51 @@ fun CloudScreen(
                 }
             }
 
+            item { Spacer(Modifier.height(8.dp)) }
+            item {
+                Text("البناء الذاتي (GitHub)", style = MaterialTheme.typography.titleMedium)
+            }
+            item {
+                MonoLabel(
+                    "بعد ضبطه يستطيع الوكيل كتابة كود جديد وطلبه بنفسه، ويقرأ أخطاء المُصرِّف " +
+                        "الحقيقية ويصحّحها. لا يُنشر شيء إن فشل البناء."
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = ghToken,
+                    onValueChange = { ghToken = it },
+                    label = { Text("توكن GitHub (Actions + Contents)") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = ghRepo,
+                    onValueChange = { ghRepo = it },
+                    label = { Text("المستودع owner/repo") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                OutlinedTextField(
+                    value = ghBranch,
+                    onValueChange = { ghBranch = it },
+                    label = { Text("الفرع") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                OutlinedButton(
+                    onClick = { onSaveGitHub(ghToken, ghRepo, ghBranch) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("حفظ إعدادات البناء") }
+            }
+
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
                     Column(Modifier.padding(14.dp)) {
@@ -163,6 +212,9 @@ fun CloudScreen(
 }
 
 data class CloudViewState(
+    val githubToken: String = "",
+    val githubRepo: String = "",
+    val githubBranch: String = "main",
     val url: String = "",
     val token: String = "",
     val clientId: String = "primary",

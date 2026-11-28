@@ -253,6 +253,7 @@ fun AgentRoot(app: AgentApp) {
                     onSave = { url, token, client -> vm.saveCloud(url, token, client) },
                     onProbe = { vm.probeCloud() },
                     onPush = { vm.pushToCloud() },
+                    onSaveGitHub = { token, repo, branch -> vm.saveGitHub(token, repo, branch) },
                 )
                 Tab.LOGS -> LogsScreen(vm)
             }

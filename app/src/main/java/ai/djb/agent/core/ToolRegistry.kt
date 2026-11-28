@@ -8,6 +8,7 @@ import ai.djb.agent.tools.AppControlTools
 import ai.djb.agent.tools.MemoryTools
 import ai.djb.agent.tools.PatternTools
 import ai.djb.agent.tools.ScheduleTools
+import ai.djb.agent.tools.SelfBuildTools
 import ai.djb.agent.tools.SelfCodeTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
@@ -114,6 +115,12 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(SelfCodeTools.SearchSource())
         register(SelfCodeTools.ProposePatch())
         register(SelfCodeTools.ListPatches())
+
+        // --- adding a capability it doesn't have: write, build, read errors, retry ---
+        register(SelfBuildTools.WriteFile())
+        register(SelfBuildTools.Staged())
+        register(SelfBuildTools.Build())
+        register(SelfBuildTools.BuildStatus())
 
         // --- leaving the phone: web + cloud worker ---
         register(CloudTools.WebFetch())
