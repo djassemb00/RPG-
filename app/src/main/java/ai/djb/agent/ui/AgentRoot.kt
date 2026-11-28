@@ -37,12 +37,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import ai.djb.agent.AgentApp
 import ai.djb.agent.core.Risk
 
-private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS }
+private enum class Tab { CHAT, SKILLS, TASKS, PROVIDERS, ADB, SETTINGS, LOGS, BACKUP }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -179,6 +180,7 @@ fun AgentRoot(app: AgentApp) {
                     state = state,
                     onOpenAdb = { tab = Tab.ADB },
                     onOpenLogs = { tab = Tab.LOGS },
+                    onOpenBackup = { vm.refreshBackupCounts(); tab = Tab.BACKUP },
                     onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision ->
                         vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision)
                         settingsVersion++
@@ -190,6 +192,23 @@ fun AgentRoot(app: AgentApp) {
                         )
                     },
                 )
+                Tab.BACKUP -> {
+                    // Storage Access Framework: the user picks where the file goes,
+                    // so we never guess an external path we may not be able to write.
+                    val importPicker = rememberLauncherForActivityResult(
+                        androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+                    ) { uri -> uri?.let { vm.importBackup(it) } }
+
+                    BackupScreen(
+                        onBack = { tab = Tab.SETTINGS },
+                        lastMessage = state.backupMessage,
+                        exporting = state.backupBusy,
+                        counts = state.backupCounts,
+                        onExport = { includeKeys -> vm.exportBackup(includeKeys) },
+                        onShareLast = { vm.shareBackup() },
+                        onImport = { importPicker.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                    )
+                }
                 Tab.LOGS -> LogsScreen(vm)
             }
         }

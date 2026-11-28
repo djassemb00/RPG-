@@ -81,6 +81,10 @@ data class UiState(
     val adbBusy: Boolean = false,
     val adbResult: String? = null,
     val visionEnabled: Boolean = true,
+    val backupBusy: Boolean = false,
+    val backupMessage: String? = null,
+    val backupCounts: BackupCounts = BackupCounts(),
+    val lastBackupPath: String? = null,
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -491,6 +495,74 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             }
             _state.value = _state.value.copy(adbBusy = false, adbResult = text.trim())
             system(text.trim())
+        }
+    }
+
+    fun refreshBackupCounts() {
+        _state.value = _state.value.copy(
+            backupCounts = BackupCounts(
+                skills = app.store.readSkills().size,
+                memory = app.store.readMemory().size,
+                rules = app.store.readRules().size,
+                tasks = app.tasks.load().size,
+                providers = app.providers.load().size,
+            )
+        )
+    }
+
+    fun exportBackup(includeKeys: Boolean) {
+        _state.value = _state.value.copy(backupBusy = true)
+        viewModelScope.launch {
+            val result = runCatching { app.backup.exportToCache(includeKeys) }
+            result.onSuccess { file ->
+                _state.value = _state.value.copy(
+                    backupBusy = false,
+                    lastBackupPath = file.absolutePath,
+                    backupMessage = "صُدّرت نسخة (${file.length() / 1024} كيلوبايت)" +
+                        if (includeKeys) " — تحتوي مفاتيح API." else " — بلا مفاتيح.",
+                )
+                system("نسخة احتياطية: ${file.absolutePath}")
+            }.onFailure { e ->
+                _state.value = _state.value.copy(backupBusy = false, backupMessage = "فشل التصدير: ${e.message}")
+            }
+        }
+    }
+
+    /** Opens the system share sheet for the last exported file. */
+    fun shareBackup() {
+        val path = _state.value.lastBackupPath ?: return
+        val file = java.io.File(path)
+        if (!file.exists()) {
+            _state.value = _state.value.copy(backupMessage = "الملف لم يعد موجودًا، أعد التصدير.")
+            return
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            app, "ai.djb.agent.files", file,
+        )
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "application/json"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        app.startActivity(
+            android.content.Intent.createChooser(intent, "مشاركة النسخة").apply {
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+        )
+    }
+
+    fun importBackup(uri: android.net.Uri) {
+        _state.value = _state.value.copy(backupBusy = true)
+        viewModelScope.launch {
+            val doc = app.backup.readFrom(uri)
+            if (doc == null) {
+                _state.value = _state.value.copy(backupBusy = false, backupMessage = "تعذّرت قراءة الملف.")
+                return@launch
+            }
+            val result = app.backup.import(doc)
+            refreshBackupCounts()
+            _state.value = _state.value.copy(backupBusy = false, backupMessage = result.message)
+            system(result.message)
         }
     }
 

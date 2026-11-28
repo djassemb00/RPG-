@@ -35,6 +35,7 @@ fun SettingsScreen(
     state: UiState,
     onOpenAdb: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
+    onOpenBackup: () -> Unit = {},
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
@@ -195,6 +196,14 @@ fun SettingsScreen(
                         MonoLabel("كل استدعاء أداة ونتيجته")
                     }
                     TextButton(onClick = onOpenLogs) { Text("فتح") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("النسخ الاحتياطي", fontWeight = FontWeight.SemiBold)
+                        MonoLabel("صدّر المهارات والذاكرة والإعدادات أو استوردها")
+                    }
+                    TextButton(onClick = onOpenBackup) { Text("فتح") }
                 }
             }
         }

@@ -215,6 +215,7 @@ class ToolContext(
     val bus: EventBus,
     val shell: ShellBridgeRef,
     val adb: AdbBridge,
+    val backup: BackupManager,
 )
 
 interface AgentTool {

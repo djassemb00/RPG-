@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Backups live in the cache dir and are shared read-only through FileProvider. -->
+    <cache-path name="backups" path="backups/" />
+    <cache-path name="screens" path="screens/" />
+</paths>

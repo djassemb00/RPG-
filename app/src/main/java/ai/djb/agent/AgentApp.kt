@@ -1,6 +1,7 @@
 package ai.djb.agent
 
 import ai.djb.agent.core.AdbBridge
+import ai.djb.agent.core.BackupManager
 import ai.djb.agent.core.AgentEngine
 import ai.djb.agent.core.EventBus
 import ai.djb.agent.core.JsonStore
@@ -45,6 +46,10 @@ class AgentApp : Application() {
     lateinit var adb: AdbBridge
         private set
 
+    /** Everything the agent learned, moved in and out as one JSON file. */
+    lateinit var backup: BackupManager
+        private set
+
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
@@ -56,8 +61,9 @@ class AgentApp : Application() {
         shell = ShellBridge(this)
         providers = ProviderRegistry(store).also { it.migrateLegacySettings(settings) }
         client = LlmClient(settings, providers, bus)
+        backup = BackupManager(this, store, settings, providers, tasks, adb)
 
-        val context = ToolContext(this, store, settings, permissions, bus, shell, adb)
+        val context = ToolContext(this, store, settings, permissions, bus, shell, adb, backup)
         registry = ToolRegistry(context)
         ToolRegistryHolder.attach(registry)
         registry.installDefaults()

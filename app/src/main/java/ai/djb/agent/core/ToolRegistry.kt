@@ -3,6 +3,7 @@ package ai.djb.agent.core
 import ai.djb.agent.skills.SkillRuntime
 import ai.djb.agent.tools.AccessibilityTools
 import ai.djb.agent.tools.AdbTools
+import ai.djb.agent.tools.BackupTools
 import ai.djb.agent.tools.AppControlTools
 import ai.djb.agent.tools.MemoryTools
 import ai.djb.agent.tools.ScheduleTools
@@ -92,6 +93,10 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(AdbTools.AdbClickText())
         register(AdbTools.AdbScreenshot())
         register(AdbTools.AdbDisconnect())
+
+        // --- moving what it learned between installs ---
+        register(BackupTools.ExportBackup())
+        register(BackupTools.InspectBackup())
 
         // --- vision: see the screen, not just its text ---
         register(VisionTools.Look())
