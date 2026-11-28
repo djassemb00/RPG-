@@ -209,7 +209,8 @@ class AgentAccessibilityService : AccessibilityService() {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return null
         val latch = java.util.concurrent.CountDownLatch(1)
         var result: ByteArray? = null
-        val ok = takeScreenshot(
+        // Returns Unit and reports through the callback; the latch decides success.
+        takeScreenshot(
             android.view.Display.DEFAULT_DISPLAY,
             java.util.concurrent.Executors.newSingleThreadExecutor(),
             object : TakeScreenshotCallback {
@@ -228,9 +229,8 @@ class AgentAccessibilityService : AccessibilityService() {
                 }
             },
         )
-        if (!ok) return null
-        latch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
-        return result
+        val completed = latch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        return if (completed) result else null
     }
 
     /** Called before each new task so stale state can't leak between runs. */
