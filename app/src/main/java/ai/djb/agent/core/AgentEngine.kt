@@ -175,6 +175,20 @@ class AgentEngine(
                 store.appendLog(logLine("tool_end", "${call.name} -> ${result.take(300)}"))
                 messages += ChatMessage.tool(call.id, call.name, result.take(4000))
             }
+
+            // If a tool captured the screen, hand the picture to the model on its
+            // very next step, as a multimodal user message.
+            val vision = ai.djb.agent.tools.PendingVision.drain()
+            if (vision != null && !settings.visionEnabled) {
+                bus.emit(AgentEvent.Log("التُقطت صورة لكنها لم تُرسل: الرؤية معطّلة في الإعدادات.", LogLevel.WARN))
+            }
+            vision?.takeIf { settings.visionEnabled }?.let { (image, question) ->
+                bus.emit(AgentEvent.Log("أرسل صورة الشاشة إلى الموديل (${image.size / 1024} كيلوبايت)."))
+                messages += ChatMessage.userWithImage(
+                    "هذه صورة الشاشة الحالية. $question",
+                    image,
+                )
+            }
         }
 
         val note = "وصلت للحد الأقصى من الخطوات ($maxSteps). المهمة قد تكون غير مكتملة."

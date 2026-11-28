@@ -80,6 +80,7 @@ data class UiState(
     val adbLastError: String = "",
     val adbBusy: Boolean = false,
     val adbResult: String? = null,
+    val visionEnabled: Boolean = true,
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -135,6 +136,7 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             adbTarget = app.adb.connectedTarget().orEmpty(),
             adbKeyFingerprint = app.adb.keyFingerprint(),
             adbLastError = app.adb.config().lastError,
+            visionEnabled = s.visionEnabled,
             providerChain = app.client.describeChain(),
             configured = app.client.hasUsableProvider(),
         )
@@ -378,12 +380,20 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         }
     }
 
-    fun saveBehaviour(name: String, autonomy: Autonomy, selfImprove: Boolean, maxSteps: Int, extra: String) {
+    fun saveBehaviour(
+        name: String,
+        autonomy: Autonomy,
+        selfImprove: Boolean,
+        maxSteps: Int,
+        extra: String,
+        vision: Boolean,
+    ) {
         app.settings.agentName = name
         app.settings.autonomy = autonomy
         app.settings.selfImprove = selfImprove
         app.settings.maxSteps = maxSteps
         app.settings.extraInstruction = extra
+        app.settings.visionEnabled = vision
         userPrefsSaved()
     }
 

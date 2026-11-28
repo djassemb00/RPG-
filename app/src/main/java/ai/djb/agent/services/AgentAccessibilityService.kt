@@ -198,6 +198,41 @@ class AgentAccessibilityService : AccessibilityService() {
     fun globalNotifications(): Boolean = performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
     fun globalQuickSettings(): Boolean = performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
 
+    /**
+     * Screenshot via the accessibility service.
+     *
+     * Faster and more portable than ADB (no pairing), and it works when the app is
+     * in the foreground. On Android 11+ it uses takeScreenshot; the callback API is
+     * bridged to a coroutine-friendly latch by the caller.
+     */
+    fun takeScreenshotBlocking(timeoutMs: Long = 4000): ByteArray? {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) return null
+        val latch = java.util.concurrent.CountDownLatch(1)
+        var result: ByteArray? = null
+        val ok = takeScreenshot(
+            android.view.Display.DEFAULT_DISPLAY,
+            java.util.concurrent.Executors.newSingleThreadExecutor(),
+            object : TakeScreenshotCallback {
+                override fun onSuccess(screenshot: ScreenshotResult) {
+                    val hardware = android.graphics.Bitmap.wrapHardwareBuffer(screenshot.hardwareBuffer, null)
+                    val software = hardware?.copy(android.graphics.Bitmap.Config.ARGB_8888, false)
+                    screenshot.hardwareBuffer.close()
+                    val out = java.io.ByteArrayOutputStream()
+                    software?.compress(android.graphics.Bitmap.CompressFormat.JPEG, 80, out)
+                    result = out.toByteArray()
+                    latch.countDown()
+                }
+
+                override fun onFailure(errorCode: Int) {
+                    latch.countDown()
+                }
+            },
+        )
+        if (!ok) return null
+        latch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)
+        return result
+    }
+
     /** Called before each new task so stale state can't leak between runs. */
     fun clearConversation() = Unit
 

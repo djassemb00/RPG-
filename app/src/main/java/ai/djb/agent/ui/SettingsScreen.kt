@@ -35,7 +35,7 @@ fun SettingsScreen(
     state: UiState,
     onOpenAdb: () -> Unit = {},
     onOpenLogs: () -> Unit = {},
-    onSaveBehaviour: (String, Autonomy, Boolean, Int, String) -> Unit,
+    onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
     var name by remember(state.agentName) { mutableStateOf(state.agentName) }
@@ -43,6 +43,7 @@ fun SettingsScreen(
     var selfImprove by remember(state.selfImprove) { mutableStateOf(state.selfImprove) }
     var steps by remember(state.maxSteps) { mutableStateOf(state.maxSteps.toString()) }
     var extra by remember(state.extraInstruction) { mutableStateOf(state.extraInstruction) }
+    var vision by remember(state.visionEnabled) { mutableStateOf(state.visionEnabled) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -122,6 +123,15 @@ fun SettingsScreen(
             }
         }
         item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("الرؤية البصرية", style = MaterialTheme.typography.labelLarge)
+                    MonoLabel("إرسال لقطات الشاشة للموديل (يحتاج موديلًا بصريًا: gpt-4o / gemini).")
+                }
+                Switch(checked = vision, onCheckedChange = { vision = it })
+            }
+        }
+        item {
             OutlinedTextField(
                 value = steps,
                 onValueChange = { steps = it.filter(Char::isDigit).take(2) },
@@ -150,6 +160,7 @@ fun SettingsScreen(
                         selfImprove,
                         steps.toIntOrNull() ?: 12,
                         extra,
+                        vision,
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),

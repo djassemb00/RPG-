@@ -20,10 +20,29 @@ data class ChatMessage(
     val toolCalls: List<ToolCall> = emptyList(),
     val toolCallId: String? = null,
     val toolName: String? = null,
+    /** JPEG/PNG as raw bytes, sent as an image_url content part when non-empty. */
+    val image: ByteArray? = null,
 ) {
     fun toOpenAi(): JSONObject = JSONObject().apply {
         put("role", role.name.lowercase())
         when {
+            image != null && image.isNotEmpty() -> {
+                // Multimodal form: text + image in one user message.
+                put("content", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("type", "text")
+                        put("text", content)
+                    })
+                    put(JSONObject().apply {
+                        put("type", "image_url")
+                        put("image_url", JSONObject().put(
+                            "url",
+                            "data:" + imageMime() + ";base64," +
+                                android.util.Base64.encodeToString(image, android.util.Base64.NO_WRAP)
+                        ))
+                    })
+                })
+            }
             role == Role.TOOL -> put("content", content)
             toolCalls.isNotEmpty() -> {
                 put("content", content)
@@ -48,9 +67,17 @@ data class ChatMessage(
         }
     }
 
+    /** Sniffs the container so we send the right data URL even if callers pass PNG bytes. */
+    fun imageMime(): String {
+        val b = image ?: return "image/png"
+        return if (b.size > 3 && b[0] == 0xFF.toByte() && b[1] == 0xD8.toByte()) "image/jpeg" else "image/png"
+    }
+
     companion object {
         fun system(text: String) = ChatMessage(Role.SYSTEM, text)
         fun user(text: String) = ChatMessage(Role.USER, text)
+        fun userWithImage(text: String, bytes: ByteArray) =
+            ChatMessage(Role.USER, text, image = bytes)
         fun assistant(text: String, calls: List<ToolCall> = emptyList()) =
             ChatMessage(Role.ASSISTANT, text, calls)
 

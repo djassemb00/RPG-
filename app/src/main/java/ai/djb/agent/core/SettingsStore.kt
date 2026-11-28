@@ -61,6 +61,11 @@ class SettingsStore(private val store: JsonStore) {
         get() = json().optBoolean("show_routing", true)
         set(value) = put("show_routing", value)
 
+    /** Allow sending screenshots to the model (costs image tokens). */
+    var visionEnabled: Boolean
+        get() = json().optBoolean("vision_enabled", true)
+        set(value) = put("vision_enabled", value)
+
     var extraInstruction: String
         get() = json().optString("extra_instruction")
         set(value) = put("extra_instruction", value)

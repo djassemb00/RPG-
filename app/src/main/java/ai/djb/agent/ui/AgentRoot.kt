@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -180,8 +179,8 @@ fun AgentRoot(app: AgentApp) {
                     state = state,
                     onOpenAdb = { tab = Tab.ADB },
                     onOpenLogs = { tab = Tab.LOGS },
-                    onSaveBehaviour = { name, autonomy, selfImprove, steps, extra ->
-                        vm.saveBehaviour(name, autonomy, selfImprove, steps, extra)
+                    onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision ->
+                        vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision)
                         settingsVersion++
                     },
                     onEnableAccessibility = {

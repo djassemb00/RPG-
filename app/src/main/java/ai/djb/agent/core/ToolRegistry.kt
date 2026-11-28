@@ -9,6 +9,7 @@ import ai.djb.agent.tools.ScheduleTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
 import ai.djb.agent.tools.SystemTools
+import ai.djb.agent.tools.VisionTools
 import org.json.JSONObject
 
 /** Holds the live registry so the AccessibilityService can reach it without a binder. */
@@ -91,6 +92,10 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(AdbTools.AdbClickText())
         register(AdbTools.AdbScreenshot())
         register(AdbTools.AdbDisconnect())
+
+        // --- vision: see the screen, not just its text ---
+        register(VisionTools.Look())
+        register(VisionTools.ScreenText())
 
         // --- scheduling its own future work ---
         val stamp = java.text.SimpleDateFormat("dd/MM HH:mm", java.util.Locale.getDefault())
