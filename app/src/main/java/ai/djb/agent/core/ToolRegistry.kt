@@ -11,6 +11,7 @@ import ai.djb.agent.tools.ScheduleTools
 import ai.djb.agent.tools.SelfCodeTools
 import ai.djb.agent.tools.ShellTools
 import ai.djb.agent.tools.SkillAuthoringTools
+import ai.djb.agent.tools.GrowthTools
 import ai.djb.agent.tools.SystemTools
 import ai.djb.agent.tools.UpgradeTools
 import ai.djb.agent.tools.VisionTools
@@ -111,6 +112,11 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(SelfCodeTools.SearchSource())
         register(SelfCodeTools.ProposePatch())
         register(SelfCodeTools.ListPatches())
+
+        // --- growth: judge itself from its own record ---
+        register(GrowthTools.Assess())
+        register(GrowthTools.Improve())
+        register(GrowthTools.Graduate())
 
         // --- the closed container and the safety valve ---
         register(UpgradeTools.VerifyCandidate())

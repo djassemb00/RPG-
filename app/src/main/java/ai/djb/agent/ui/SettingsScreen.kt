@@ -38,6 +38,7 @@ fun SettingsScreen(
     onOpenBackup: () -> Unit = {},
     onOpenSelfCode: () -> Unit = {},
     onOpenUpgrade: () -> Unit = {},
+    onOpenGrowth: () -> Unit = {},
     onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
@@ -222,6 +223,14 @@ fun SettingsScreen(
                         MonoLabel("حاوية التحقق · استعادة النسخة المستقرة")
                     }
                     TextButton(onClick = onOpenUpgrade) { Text("فتح") }
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("النمو والاستقلالية", fontWeight = FontWeight.SemiBold)
+                        MonoLabel("إصلاح ذاتي مبني على سجلّك + ترقية استقلالية بالأدلة")
+                    }
+                    TextButton(onClick = onOpenGrowth) { Text("فتح") }
                 }
             }
         }

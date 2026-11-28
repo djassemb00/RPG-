@@ -90,6 +90,7 @@ data class UiState(
     val sourceCount: Int = 0,
     val selfCodeMessage: String? = null,
     val upgradeState: UpgradeViewState = UpgradeViewState(),
+    val growth: GrowthViewState = GrowthViewState(),
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -500,6 +501,59 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             }
             _state.value = _state.value.copy(adbBusy = false, adbResult = text.trim())
             system(text.trim())
+        }
+    }
+
+    fun refreshGrowth() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val a = app.growth.assess()
+            val goal = ai.djb.agent.core.GrowthEngine.GRADUATE_MIN_RUNS.toFloat()
+            val runProgress = (a.totalRuns / goal).coerceIn(0f, 1f)
+            val reliabilityProgress = (a.reliability / ai.djb.agent.core.GrowthEngine.GRADUATE_MIN_RELIABILITY)
+                .coerceIn(0f, 1f)
+            _state.value = _state.value.copy(
+                growth = _state.value.growth.copy(
+                    autonomy = app.settings.autonomy.name,
+                    skills = a.totalSkills,
+                    runs = a.totalRuns,
+                    reliability = a.reliability,
+                    healthy = a.healthy,
+                    failing = a.failing.map { "${it.name} (${(it.reliability * 100).toInt()}% من ${it.runs})" },
+                    retired = a.retired.map { it.name },
+                    evidence = a.evidence,
+                    canGraduate = a.suggestedAutonomy != app.settings.autonomy &&
+                        a.suggestedAutonomy.ordinal == app.settings.autonomy.ordinal + 1,
+                    // The meter shows the weaker of the two requirements, because both
+                    // must be met — showing the stronger one would overstate readiness.
+                    progress = minOf(runProgress, reliabilityProgress),
+                )
+            )
+        }
+    }
+
+    fun runGrowth(apply: Boolean) {
+        _state.value = _state.value.copy(growth = _state.value.growth.copy(busy = true))
+        viewModelScope.launch {
+            val result = app.growth.grow(apply)
+            _state.value = _state.value.copy(
+                growth = _state.value.growth.copy(busy = false, message = result.note),
+            )
+            system(result.note)
+            refreshGrowth()
+        }
+    }
+
+    fun graduateSelf(apply: Boolean) {
+        viewModelScope.launch {
+            val outcome = app.growth.graduate(apply)
+            val text = when {
+                outcome.applied -> "ترقية الاستقلالية: ${outcome.from.name} ← ${outcome.to.name}"
+                outcome.to != outcome.from -> "مؤهّل: ${outcome.from.name} ← ${outcome.to.name}"
+                else -> "لا تغيير — ${outcome.why}"
+            }
+            _state.value = _state.value.copy(growth = _state.value.growth.copy(message = text))
+            system(text)
+            refreshGrowth()
         }
     }
 

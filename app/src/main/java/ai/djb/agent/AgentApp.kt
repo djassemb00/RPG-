@@ -4,6 +4,7 @@ import ai.djb.agent.core.AdbBridge
 import ai.djb.agent.core.BackupManager
 import ai.djb.agent.core.AgentEngine
 import ai.djb.agent.core.EventBus
+import ai.djb.agent.core.GrowthEngine
 import ai.djb.agent.core.HealthCheck
 import ai.djb.agent.core.JsonStore
 import ai.djb.agent.core.LlmClient
@@ -71,6 +72,10 @@ class AgentApp : Application() {
     lateinit var health: HealthCheck
         private set
 
+    /** The loop that turns its own track record into changes to itself. */
+    lateinit var growth: GrowthEngine
+        private set
+
     override fun onCreate() {
         super.onCreate()
         store = JsonStore(File(filesDir, "agent").apply { mkdirs() })
@@ -86,15 +91,18 @@ class AgentApp : Application() {
         selfCode = SelfCode(this, store)
         sandbox = PatchSandbox(store, settings)
         upgrade = SelfUpgrade(this, store, settings)
+        health = HealthCheck(store, settings, providers)
+        // Constructed before ToolContext because tools reach it: leaving it unset would
+        // mean an uninitialised lateinit crash on the first launch after install.
+        growth = GrowthEngine(store, settings, sandbox, client)
 
-
-
-        val context = ToolContext(this, store, settings, permissions, bus, shell, adb, backup, selfCode, sandbox, upgrade)
+        val context = ToolContext(
+            this, store, settings, permissions, bus, shell, adb, backup,
+            selfCode, sandbox, upgrade, growth,
+        )
         registry = ToolRegistry(context)
         registry.installDefaults()
         ToolRegistryHolder.attach(registry)
-
-        health = HealthCheck(store, settings, providers)
 
         // The safety valve fires on its own. A newly promoted version that fails the
         // startup check twice is reverted without the user having to notice anything.

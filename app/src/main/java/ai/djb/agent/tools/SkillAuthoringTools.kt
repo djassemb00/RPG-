@@ -133,16 +133,13 @@ class SkillAuthoringTools {
             }
 
             // Update reliability stats — this is the agent learning which plans work.
-            val skills = ctx.store.readSkills().toMutableList()
-            val idx = skills.indexOfFirst { it.name == name }
-            if (idx >= 0) {
-                val s = skills[idx]
-                skills[idx] = s.copy(
-                    runs = s.runs + 1,
-                    successes = s.successes + if (outcome.failedAt == null) 1 else 0,
-                )
-                ctx.store.writeSkills(skills)
-            }
+            // The failure text is kept too: it is the raw material the growth loop uses
+            // to rewrite the plan instead of blindly retrying it.
+            ctx.growth.recordRun(
+                name = name,
+                success = outcome.failedAt == null,
+                error = outcome.error ?: "",
+            )
 
             return if (outcome.failedAt == null) {
                 "المهارة '$name' نجحت (${outcome.executed} خطوة منفّذة).\n" + outcome.transcript

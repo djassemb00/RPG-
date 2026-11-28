@@ -219,6 +219,7 @@ class ToolContext(
     val selfCode: SelfCode,
     val sandbox: PatchSandbox,
     val upgrade: SelfUpgrade,
+    val growth: GrowthEngine,
 )
 
 interface AgentTool {
@@ -302,6 +303,13 @@ data class Skill(
     val createdAt: Long = System.currentTimeMillis(),
     val runs: Int = 0,
     val successes: Int = 0,
+    /** How many times this plan has been rewritten by the self-improvement loop. */
+    val repairs: Int = 0,
+    /** Last failure text; the raw material a repair is built from. */
+    val lastError: String = "",
+    val lastRunAt: Long = 0,
+    /** Set when the skill has been retired for consistently failing. */
+    val retired: Boolean = false,
 ) {
     val reliability: Float
         get() = if (runs == 0) 0f else successes.toFloat() / runs.toFloat()
@@ -312,6 +320,10 @@ data class Skill(
         put("created_at", createdAt)
         put("runs", runs)
         put("successes", successes)
+        if (repairs > 0) put("repairs", repairs)
+        if (lastError.isNotBlank()) put("last_error", lastError)
+        if (lastRunAt > 0) put("last_run_at", lastRunAt)
+        if (retired) put("retired", true)
         put("steps", JSONArray().apply { steps.forEach { put(it.toJson()) } })
     }
 
@@ -330,6 +342,10 @@ data class Skill(
                 createdAt = obj.optLong("created_at", System.currentTimeMillis()),
                 runs = obj.optInt("runs"),
                 successes = obj.optInt("successes"),
+                repairs = obj.optInt("repairs"),
+                lastError = obj.optString("last_error"),
+                lastRunAt = obj.optLong("last_run_at"),
+                retired = obj.optBoolean("retired"),
             )
         }
     }
