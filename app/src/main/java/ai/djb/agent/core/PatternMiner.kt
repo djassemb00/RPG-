@@ -62,10 +62,11 @@ class PatternMiner(private val store: JsonStore) {
                 "tool_start" -> {
                     val text = entry.optString("text")
                     val name = text.substringBefore(' ').trim()
-                    if (name.isBlank() || name in NOISE) return@when
-                    val args = text.substringAfter(' ', "").trim()
-                    val run = current ?: ArrayList<Pair<String, String>>().also { current = it }
-                    run.add(name to args)
+                    if (name.isNotBlank() && name !in NOISE) {
+                        val args = text.substringAfter(' ', "").trim()
+                        val run = current ?: ArrayList<Pair<String, String>>().also { current = it }
+                        run.add(name to args)
+                    }
                 }
             }
         }

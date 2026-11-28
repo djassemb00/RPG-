@@ -16,8 +16,8 @@ import java.security.MessageDigest
  *  - Every change is a reviewable text diff in a file the user can export, so nothing
  *    happens behind their back.
  *
- * The snapshot ships as `assets/source/*.kt` (flat names, `dir__File.kt`), refreshed on
- * every build by the bundle-source workflow.
+ * The snapshot ships as flat Kotlin files under `assets/source` (named `dir__File.kt`),
+ * rebuilt on every build so it always matches the compiled code.
  */
 class SelfCode(private val context: Context, private val store: JsonStore) {
 
@@ -32,7 +32,7 @@ class SelfCode(private val context: Context, private val store: JsonStore) {
         val name: String,
         val bytes: Int,
     ) {
-        /** `core__AdbBridge.kt` → `core/AdbBridge.kt` */
+        /** `core__AdbBridge.kt` becomes `core/AdbBridge.kt`. */
         val relativePath: String get() = name.replace("__", "/")
     }
 
