@@ -484,6 +484,32 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         }
     }
 
+    fun adbReadScreen() {
+        _state.value = _state.value.copy(adbBusy = true)
+        viewModelScope.launch {
+            val nodes = app.adb.describeScreenViaAdb()
+            val text = if (nodes.isEmpty()) {
+                "لا عناصر مقروءة (شاشة مقفلة أو تطبيق محمي)."
+            } else {
+                "(${nodes.size} عنصرًا)\n" + nodes.take(40).joinToString("\n") { it.describe() }
+            }
+            _state.value = _state.value.copy(adbBusy = false, adbResult = text)
+            system(text.take(600))
+        }
+    }
+
+    fun adbScreenshot() {
+        _state.value = _state.value.copy(adbBusy = true)
+        viewModelScope.launch {
+            val path = app.adb.screenshot(java.io.File(app.filesDir, "agent/screens"))
+            _state.value = _state.value.copy(
+                adbBusy = false,
+                adbResult = path?.let { "حُفظت اللقطة: $it" } ?: "تعذّر التقاط اللقطة.",
+            )
+            system(path?.let { "لقطة محفوظة: $it" } ?: "فشل التقاط اللقطة.")
+        }
+    }
+
     fun adbSavePort(host: String, port: Int) {
         val cfg = app.adb.config()
         app.adb.saveConfig(cfg.copy(host = host, port = port))

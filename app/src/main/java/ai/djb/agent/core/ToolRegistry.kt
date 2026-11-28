@@ -87,6 +87,9 @@ class ToolRegistry(private val ctx: ToolContext) {
         register(AdbTools.AdbCurrentApp())
         register(AdbTools.AdbPackages())
         register(AdbTools.AdbScreenSize())
+        register(AdbTools.AdbDescribeScreen())
+        register(AdbTools.AdbClickText())
+        register(AdbTools.AdbScreenshot())
         register(AdbTools.AdbDisconnect())
 
         // --- scheduling its own future work ---

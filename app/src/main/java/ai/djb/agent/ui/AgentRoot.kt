@@ -173,6 +173,8 @@ fun AgentRoot(app: AgentApp) {
                     onDisconnect = { vm.adbDisconnect(); settingsVersion++ },
                     onProbe = { vm.adbProbe() },
                     onOpenSettings = { vm.adbOpenWirelessSettings() },
+                    onReadScreen = { vm.adbReadScreen() },
+                    onScreenshot = { vm.adbScreenshot() },
                 )
                 Tab.SETTINGS -> SettingsScreen(
                     state = state,

@@ -36,6 +36,8 @@ fun AdbScreen(
     onDisconnect: () -> Unit,
     onProbe: () -> Unit,
     onOpenSettings: () -> Unit,
+    onReadScreen: () -> Unit,
+    onScreenshot: () -> Unit,
 ) {
     var host by remember { mutableStateOf("127.0.0.1") }
     var port by remember { mutableStateOf("5555") }
@@ -132,6 +134,17 @@ fun AdbScreen(
                 ) { Text("اتصل") }
                 OutlinedButton(onClick = onProbe, enabled = state.adbConnected) { Text("فحص الجهاز") }
                 OutlinedButton(onClick = onDisconnect, enabled = state.adbConnected) { Text("قطع") }
+            }
+        }
+
+        item {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onReadScreen, enabled = state.adbConnected) {
+                    Text("اقرأ الشاشة")
+                }
+                OutlinedButton(onClick = onScreenshot, enabled = state.adbConnected) {
+                    Text("لقطة شاشة")
+                }
             }
         }
 

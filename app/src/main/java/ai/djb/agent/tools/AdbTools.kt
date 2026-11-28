@@ -281,6 +281,68 @@ class AdbTools {
         }
     }
 
+    class AdbDescribeScreen : AgentTool {
+        override val spec = ToolSpec(
+            name = "adb_read_screen",
+            description = "اقرأ الشاشة عبر ADB (uiautomator) بلا خدمة إمكانية الوصول: نص كل عنصر وإحداثيات مركزه.",
+            risk = Risk.LOW,
+        )
+
+        override suspend fun execute(args: JSONObject, ctx: ToolContext): String {
+            if (!ctx.adb.isConnected()) return NO_ADB
+            val nodes = ctx.adb.describeScreenViaAdb()
+            if (nodes.isEmpty()) return "لا عناصر مقروءة. قد تكون الشاشة مقفلة أو التطبيق محميًا."
+            return "(${nodes.size} عنصرًا)\n" + nodes.joinToString("\n") { it.describe() }
+        }
+    }
+
+    class AdbClickText : AgentTool {
+        override val spec = ToolSpec(
+            name = "adb_click_text",
+            description = "ابحث عن نص على الشاشة وانقر مركزه عبر ADB - أدق من تخمين الإحداثيات.",
+            parameters = JSONObject()
+                .put("type", "object")
+                .put("properties", JSONObject()
+                    .put("text", prop("string", "النص أو جزء منه")))
+                .put("required", JSONArray().put("text")),
+            risk = Risk.HIGH,
+        )
+
+        override suspend fun execute(args: JSONObject, ctx: ToolContext): String {
+            if (!ctx.adb.isConnected()) return NO_ADB
+            val query = args.optString("text").trim()
+            if (query.isBlank()) return "ERROR: text مطلوب."
+            val nodes = ctx.adb.describeScreenViaAdb()
+            val match = nodes.firstOrNull {
+                it.text.contains(query, ignoreCase = true) ||
+                    it.description.contains(query, ignoreCase = true)
+            } ?: return "لم أجد عنصرًا يطابق «" + query + "». المتاح: " +
+                nodes.take(12).joinToString(" | ") { it.text.ifBlank { it.description } }
+            return if (ctx.adb.tap(match.centerX, match.centerY)) {
+                "نقرت على «" + match.text.ifBlank { match.description } + "» عند (" +
+                    match.centerX + ", " + match.centerY + ")."
+            } else {
+                "فشل النقر."
+            }
+        }
+    }
+
+    class AdbScreenshot : AgentTool {
+        override val spec = ToolSpec(
+            name = "adb_screenshot",
+            description = "التقط لقطة شاشة واحفظها في تخزين التطبيق وأعد مسارها.",
+            risk = Risk.LOW,
+        )
+
+        override suspend fun execute(args: JSONObject, ctx: ToolContext): String {
+            if (!ctx.adb.isConnected()) return NO_ADB
+            val dir = java.io.File(ctx.store.privateDir(), "screens")
+            val path = ctx.adb.screenshot(dir)
+                ?: return "ERROR: تعذّر التقاط اللقطة (قد تكون الشاشة محمية)."
+            return "حُفظت اللقطة: " + path
+        }
+    }
+
     /** Replaces the old executor-based stub: now a real ADB socket connection. */
     class AdbDisconnect : AgentTool {
         override val spec = ToolSpec(

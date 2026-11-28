@@ -167,10 +167,103 @@ class AdbBridge(private val store: JsonStore) {
         return match.groupValues[1].toInt() to match.groupValues[2].toInt()
     }
 
-    suspend fun screenshotTo(path: String): Boolean {
-        // screencap writes the PNG on the device; we pull it afterwards.
-        val ok = shell("screencap -p $path")?.exitCode == 0
-        return ok
+    // ---- screen understanding without the accessibility service ----
+
+    /**
+     * Dumps the live view hierarchy through `uiautomator` and flattens it into a
+     * compact, model-friendly list.
+     *
+     * This is the missing piece for blind ADB control: taps are coordinates, and
+     * without knowing where things are the agent is guessing. uiautomator gives us
+     * text + bounds for every visible node, with no accessibility service involved.
+     */
+    suspend fun describeScreenViaAdb(maxNodes: Int = 100): List<ScreenNode> {
+        val path = "/sdcard/djb_ui_${System.currentTimeMillis()}.xml"
+        val dumped = shell("uiautomator dump $path 2>/dev/null; cat $path")
+            ?: return emptyList()
+        val xml = dumped.output
+        shell("rm -f $path")
+
+        val start = xml.indexOf("<hierarchy")
+        if (start < 0) return emptyList()
+        val document = xml.substring(start)
+
+        val nodes = ArrayList<ScreenNode>()
+        runCatching {
+            val parser = android.util.Xml.newPullParser()
+            parser.setInput(java.io.StringReader(document))
+            var event = parser.eventType
+            while (event != org.xmlpull.v1.XmlPullParser.END_DOCUMENT && nodes.size < maxNodes) {
+                if (event == org.xmlpull.v1.XmlPullParser.START_TAG && parser.name == "node") {
+                    val text = parser.getAttributeValue(null, "text").orEmpty()
+                    val desc = parser.getAttributeValue(null, "content-desc").orEmpty()
+                    val cls = parser.getAttributeValue(null, "class").orEmpty().substringAfterLast('.')
+                    val bounds = parser.getAttributeValue(null, "bounds").orEmpty()
+                    val clickable = parser.getAttributeValue(null, "clickable") == "true"
+                    val boundsRe = Regex("""\[(\d+),(\d+)]\[(\d+),(\d+)]""")
+                    val m = boundsRe.find(bounds)
+                    if ((text.isNotBlank() || desc.isNotBlank()) && m != null) {
+                        val (x1, y1, x2, y2) = m.destructured
+                        nodes.add(
+                            ScreenNode(
+                                index = nodes.size,
+                                text = text,
+                                description = desc,
+                                className = cls,
+                                clickable = clickable,
+                                centerX = (x1.toInt() + x2.toInt()) / 2,
+                                centerY = (y1.toInt() + y2.toInt()) / 2,
+                            )
+                        )
+                    }
+                }
+                event = parser.next()
+            }
+        }
+        return nodes
+    }
+
+    /** Finds a node by visible text / content description and taps its centre. */
+    suspend fun tapText(query: String): Boolean {
+        val node = describeScreenViaAdb().firstOrNull {
+            it.text.contains(query, ignoreCase = true) ||
+                it.description.contains(query, ignoreCase = true)
+        } ?: return false
+        return tap(node.centerX, node.centerY)
+    }
+
+    data class ScreenNode(
+        val index: Int,
+        val text: String,
+        val description: String,
+        val className: String,
+        val clickable: Boolean,
+        val centerX: Int,
+        val centerY: Int,
+    ) {
+        fun describe(): String = buildString {
+            append("[$index] ")
+            append(className.ifBlank { "?" })
+            if (text.isNotBlank()) append(" «$text»")
+            if (description.isNotBlank()) append(" {" + description + "}")
+            if (clickable) append(" [قابل للنقر]")
+            append(" @(").append(centerX).append(",").append(centerY).append(")")
+        }
+    }
+
+    /** Saves a PNG screenshot inside app storage; returns the file path. */
+    suspend fun screenshot(dir: java.io.File): String? {
+        val remote = "/data/local/tmp/djb_shot.png"
+        if (shell("screencap -p $remote")?.exitCode != 0) return null
+        val base64 = shell("base64 $remote")?.output ?: return null
+        shell("rm -f $remote")
+        return runCatching {
+            val bytes = android.util.Base64.decode(base64.replace("\n", ""), android.util.Base64.DEFAULT)
+            dir.mkdirs()
+            val file = java.io.File(dir, "shot_${System.currentTimeMillis()}.png")
+            file.writeBytes(bytes)
+            file.absolutePath
+        }.getOrNull()
     }
 
     suspend fun listPackages(onlyThirdParty: Boolean = false): String? =
