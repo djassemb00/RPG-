@@ -92,7 +92,8 @@ data class ProviderSlot(
             lastFailAt = obj.optLong("last_fail_at"),
             successCount = obj.optInt("success_count"),
             failCount = obj.optInt("fail_count"),
-            role = runCatching { Role.valueOf(obj.optString("role", "ANY")) }.getOrDefault(AgentPhase.ANY),
+            role = runCatching { AgentPhase.valueOf(obj.optString("role", "ANY")) }
+                .getOrDefault(AgentPhase.ANY),
             planModel = obj.optString("plan_model"),
         )
     }
