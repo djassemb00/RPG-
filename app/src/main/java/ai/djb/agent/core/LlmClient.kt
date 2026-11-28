@@ -61,7 +61,15 @@ class LlmClient(
         return emptyList()
     }
 
+    private fun chainForPhase(phase: Role): List<ProviderSlot> {
+        val routed = registry.chainFor(phase)
+        if (routed.isNotEmpty()) return routed
+        return chain()
+    }
+
     fun hasUsableProvider(): Boolean = chain().isNotEmpty()
+
+    fun routingSummary(): String = registry.routingSummary()
 
     fun describeChain(): String {
         val c = chain()
@@ -71,8 +79,9 @@ class LlmClient(
     suspend fun chat(
         messages: List<ChatMessage>,
         tools: List<ToolSpec>,
+        phase: Role = Role.ANY,
     ): LlmResponse = withContext(Dispatchers.IO) {
-        val chain = chain()
+        val chain = if (phase == Role.ANY) chain() else chainForPhase(phase)
         if (chain.isEmpty()) {
             throw LlmException("لا يوجد مزوّد مضبوط. افتح الإعدادات ← المزوّدون وأضف مفتاحًا.")
         }
@@ -81,7 +90,7 @@ class LlmClient(
 
         for ((index, slot) in chain.withIndex()) {
             try {
-                val response = callOnce(slot, messages, tools)
+                val response = callOnce(slot, messages, tools, slot.modelFor(phase))
                 if (slot.presetId != "legacy") {
                     registry.recordOutcome(slot.presetId, ok = true)
                 }
@@ -160,9 +169,10 @@ class LlmClient(
             for (candidate in candidates) {
                 val ok = try {
                     callOnce(
-                        slot.copy(model = candidate),
-                        listOf(ChatMessage.user("hi")),
-                        emptyList(),
+                        slot = slot.copy(model = candidate),
+                        messages = listOf(ChatMessage.user("hi")),
+                        tools = emptyList(),
+                        model = candidate,
                     )
                     true
                 } catch (e: AttemptFailed) {
@@ -201,9 +211,10 @@ class LlmClient(
         slot: ProviderSlot,
         messages: List<ChatMessage>,
         tools: List<ToolSpec>,
+        model: String = slot.model,
     ): LlmResponse {
         val body = JSONObject().apply {
-            put("model", slot.model)
+            put("model", model)
             put("temperature", settings.temperature)
             put("messages", JSONArray().apply { messages.forEach { put(it.toOpenAi()) } })
             if (tools.isNotEmpty()) {

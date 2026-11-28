@@ -22,6 +22,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ai.djb.agent.core.ProviderPreset
+import ai.djb.agent.core.Role
 
 @Composable
 fun ProvidersScreen(
@@ -60,7 +62,10 @@ fun ProvidersScreen(
     onLoadModels: (String) -> Unit,
     onPickModel: (String, String) -> Unit,
     onAutoFix: (String) -> Unit,
+    onSetRole: (String, Role) -> Unit,
+    onSetPlanModel: (String, String) -> Unit,
 ) {
+    var editingPlanModel by remember { mutableStateOf<String?>(null) }
     var editing by remember { mutableStateOf<ProviderPreset?>(null) }
 
     LazyColumn(
@@ -83,8 +88,15 @@ fun ProvidersScreen(
 
         item {
             SectionCard {
-                MonoLabel("سلسلة الطلب الحالية:")
-                Text(state.providerChain, fontWeight = FontWeight.SemiBold)
+                MonoLabel("التوجيه الحالي:")
+                Text(state.routingSummary, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "التخطيط = أول قرار في المهمة (رخيص). التنفيذ = خطوات الأدوات (مكلف). " +
+                        "يمكنك جعل مزوّد سريع للتخطيط وآخر قوي للتنفيذ.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -144,6 +156,30 @@ fun ProvidersScreen(
                             "آخر خطأ: $it",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+
+                    Spacer(Modifier.height(6.dp))
+                    MonoLabel("الدور:")
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Role.entries.forEach { role ->
+                            FilterChip(
+                                selected = slot.role == role,
+                                onClick = { onSetRole(slot.presetId, role) },
+                                label = { Text(role.label(), style = MaterialTheme.typography.labelSmall) },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        MonoLabel(
+                            "موديل التخطيط: " + slot.planModel.ifBlank { "(نفس الأساسي)" },
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        AssistChip(
+                            onClick = { editingPlanModel = slot.presetId },
+                            label = { Text("تعديل", style = MaterialTheme.typography.labelSmall) },
                         )
                     }
 
@@ -251,6 +287,45 @@ fun ProvidersScreen(
         }
 
         item { Spacer(Modifier.height(24.dp)) }
+    }
+
+    editingPlanModel?.let { presetId ->
+        val slot = state.providers.firstOrNull { it.presetId == presetId }
+        var draft by remember(presetId) { mutableStateOf(slot?.planModel.orEmpty()) }
+        AlertDialog(
+            onDismissRequest = { editingPlanModel = null },
+            title = { Text("موديل التخطيط — ${slot?.label.orEmpty()}") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "موديل رخيص/سريع لهذه المرحلة. اتركه فارغًا لاستخدام الموديل الأساسي.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        label = { Text("Model") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    val available = state.modelLists[presetId].orEmpty()
+                    if (available.isNotEmpty()) {
+                        Text(
+                            "من القائمة الحية: " + available.take(4).joinToString(" · "),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSetPlanModel(presetId, draft)
+                    editingPlanModel = null
+                }) { Text("حفظ") }
+            },
+            dismissButton = { TextButton(onClick = { editingPlanModel = null }) { Text("إلغاء") } },
+        )
     }
 
     editing?.let { preset ->

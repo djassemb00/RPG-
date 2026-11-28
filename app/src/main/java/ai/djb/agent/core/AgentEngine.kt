@@ -135,8 +135,11 @@ class AgentEngine(
             if (job?.isCancelled == true) return
             step++
 
+            // Phase routing: the opening decisions run on the cheap model, tool turns
+            // on the strong one. On step 1 there is nothing to execute yet.
+            val phase = if (step == 1) Role.PLAN else Role.ACT
             val response = try {
-                client.chat(messages, registry.specs())
+                client.chat(messages, registry.specs(), phase)
             } catch (e: Exception) {
                 bus.emit(AgentEvent.Log("فشل الاتصال بالموديل: ${e.message}", LogLevel.ERROR))
                 store.appendLog(logLine("llm_error", e.message.orEmpty()))
@@ -145,6 +148,9 @@ class AgentEngine(
 
             if (response.content.isNotBlank()) {
                 bus.emit(AgentEvent.Log(response.content))
+            }
+            if (settings.showRouting) {
+                store.appendLog(logLine("route", "step=$step phase=${phase.name} via=${response.providerLabel}"))
             }
 
             if (response.toolCalls.isEmpty()) {

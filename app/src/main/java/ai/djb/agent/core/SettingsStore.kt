@@ -56,6 +56,11 @@ class SettingsStore(private val store: JsonStore) {
         get() = json().optString("agent_name", "djb")
         set(value) = put("agent_name", value.trim().ifBlank { "djb" })
 
+    /** Log which model served each phase — useful when tuning cost. */
+    var showRouting: Boolean
+        get() = json().optBoolean("show_routing", true)
+        set(value) = put("show_routing", value)
+
     var extraInstruction: String
         get() = json().optString("extra_instruction")
         set(value) = put("extra_instruction", value)

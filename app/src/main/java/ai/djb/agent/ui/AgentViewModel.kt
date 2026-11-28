@@ -6,6 +6,7 @@ import ai.djb.agent.core.Autonomy
 import ai.djb.agent.core.LogLevel
 import ai.djb.agent.core.ProviderSlot
 import ai.djb.agent.core.Repeat
+import ai.djb.agent.core.Role
 import ai.djb.agent.core.ScheduledTask
 import ai.djb.agent.core.Risk
 import ai.djb.agent.services.AgentAccessibilityService
@@ -30,6 +31,8 @@ data class FeedItem(
 )
 
 data class ProviderSlotView(
+    val role: Role = Role.ANY,
+    val planModel: String = "",
     val presetId: String,
     val label: String,
     val baseUrl: String,
@@ -70,6 +73,7 @@ data class UiState(
     val modelLoadingFor: String? = null,
     val modelListError: String? = null,
     val tasks: List<ScheduledTask> = emptyList(),
+    val routingSummary: String = "",
 )
 
 class AgentViewModel(private val app: AgentApp) : ViewModel() {
@@ -115,9 +119,12 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
                     successCount = slot.successCount,
                     failCount = slot.failCount,
                     lastError = slot.lastError,
+                    role = slot.role,
+                    planModel = slot.planModel,
                 )
             },
             tasks = app.tasks.load(),
+            routingSummary = app.client.routingSummary(),
             providerChain = app.client.describeChain(),
             configured = app.client.hasUsableProvider(),
         )
@@ -269,6 +276,18 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
                 },
             )
         }
+    }
+
+    fun setProviderRole(presetId: String, role: Role) {
+        app.providers.setRole(presetId, role)
+        refreshSettings()
+        system("دور المزوّد الآن: ${role.label()} — ${app.client.routingSummary()}")
+    }
+
+    fun setPlanModel(presetId: String, model: String) {
+        app.providers.setPlanModel(presetId, model.trim())
+        refreshSettings()
+        system("موديل التخطيط: ${model.ifBlank { "(يستخدم الموديل الأساسي)" }}")
     }
 
     fun setModel(presetId: String, model: String) {

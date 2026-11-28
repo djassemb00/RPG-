@@ -170,6 +170,8 @@ fun AgentRoot(app: AgentApp) {
                     onLoadModels = { id -> vm.loadModels(id) },
                     onPickModel = { id, model -> vm.setModel(id, model); settingsVersion++ },
                     onAutoFix = { id -> vm.autoFixModel(id); settingsVersion++ },
+                    onSetRole = { id, role -> vm.setProviderRole(id, role); settingsVersion++ },
+                    onSetPlanModel = { id, model -> vm.setPlanModel(id, model); settingsVersion++ },
                 )
                 Tab.SETTINGS -> SettingsScreen(
                     state = state,

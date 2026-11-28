@@ -5,6 +5,31 @@ import org.json.JSONObject
 import org.json.JSONTokener
 
 /**
+ * Which part of an agent turn a provider should serve.
+ *
+ * Planning is cheap (short prompt, one small decision); acting is expensive (long
+ * history, tool schemas, multi-step). Letting those use different models is the
+ * single biggest cost lever in an agent loop.
+ */
+enum class Role {
+    /** Preferred for the first model call of a run: intent + short plan. */
+    PLAN,
+
+    /** Preferred for tool-calling turns: the expensive part. */
+    ACT,
+
+    /** Usable for anything (default, backwards compatible). */
+    ANY,
+    ;
+
+    fun label(): String = when (this) {
+        PLAN -> "تخطيط"
+        ACT -> "تنفيذ"
+        ANY -> "عام"
+    }
+}
+
+/**
  * A provider entry the user actually holds a key for.
  *
  * Keys are stored separately per provider so rotating one never touches the others,
@@ -23,8 +48,18 @@ data class ProviderSlot(
     val lastFailAt: Long = 0,
     val successCount: Int = 0,
     val failCount: Int = 0,
+    /** Which phase of a run this provider is preferred for. */
+    val role: Role = Role.ANY,
+    /** Optional lighter/cheaper model used during planning, falling back to `model`. */
+    val planModel: String = "",
 ) {
     val configured: Boolean get() = baseUrl.isNotBlank() && model.isNotBlank() && key.isNotBlank()
+
+    /** The model to use for a given phase. */
+    fun modelFor(phase: Role): String = when (phase) {
+        Role.PLAN -> planModel.ifBlank { model }
+        else -> model
+    }
 
     fun toJson(): JSONObject = JSONObject().apply {
         put("preset_id", presetId)
@@ -39,6 +74,8 @@ data class ProviderSlot(
         put("last_fail_at", lastFailAt)
         put("success_count", successCount)
         put("fail_count", failCount)
+        put("role", role.name)
+        put("plan_model", planModel)
     }
 
     companion object {
@@ -55,6 +92,8 @@ data class ProviderSlot(
             lastFailAt = obj.optLong("last_fail_at"),
             successCount = obj.optInt("success_count"),
             failCount = obj.optInt("fail_count"),
+            role = runCatching { Role.valueOf(obj.optString("role", "ANY")) }.getOrDefault(Role.ANY),
+            planModel = obj.optString("plan_model"),
         )
     }
 }
@@ -204,6 +243,39 @@ class ProviderRegistry(private val store: JsonStore) {
 
     /** Convenience: the first slot that is enabled and fully configured. */
     fun firstUsable(): ProviderSlot? = load().firstOrNull { it.enabled && it.configured }
+
+    /**
+     * Ordered chain for a phase. Providers tagged for that phase come first, then
+     * `ANY` providers, then everything else as a last-resort fallback — so a routing
+     * preference never becomes a single point of failure.
+     */
+    fun chainFor(phase: Role): List<ProviderSlot> {
+        val usable = load().filter { it.enabled && it.configured }
+        val preferred = usable.filter { it.role == phase }
+        val generic = usable.filter { it.role == Role.ANY }
+        val other = usable.filter { it.role != phase && it.role != Role.ANY }
+        return (preferred + generic + other).distinctBy { it.presetId }
+    }
+
+    fun setRole(presetId: String, role: Role): List<ProviderSlot> {
+        save(load().map { if (it.presetId == presetId) it.copy(role = role) else it })
+        return load()
+    }
+
+    fun setPlanModel(presetId: String, model: String): List<ProviderSlot> {
+        save(load().map { if (it.presetId == presetId) it.copy(planModel = model) else it })
+        return load()
+    }
+
+    /** Human-readable explanation of how a turn will be routed right now. */
+    fun routingSummary(): String {
+        val plan = chainFor(Role.PLAN).firstOrNull()
+        val act = chainFor(Role.ACT).firstOrNull()
+        if (plan == null && act == null) return "لا مزوّد مضبوط"
+        val planText = plan?.let { "${it.label} / ${it.modelFor(Role.PLAN)}" } ?: "—"
+        val actText = act?.let { "${it.label} / ${it.modelFor(Role.ACT)}" } ?: "—"
+        return if (planText == actText) "كل المراحل: $actText" else "تخطيط: $planText · تنفيذ: $actText"
+    }
 
     /**
      * One-time bridge for settings.json written by v0.1.0, so upgrading users
