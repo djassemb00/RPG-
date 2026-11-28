@@ -66,6 +66,11 @@ class SettingsStore(private val store: JsonStore) {
         get() = json().optBoolean("vision_enabled", true)
         set(value) = put("vision_enabled", value)
 
+    /** Distil a lesson from each successful run without being asked. */
+    var autoLearn: Boolean
+        get() = json().optBoolean("auto_learn", true)
+        set(value) = put("auto_learn", value)
+
     var extraInstruction: String
         get() = json().optString("extra_instruction")
         set(value) = put("extra_instruction", value)

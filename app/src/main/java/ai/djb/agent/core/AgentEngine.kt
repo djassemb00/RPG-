@@ -163,6 +163,10 @@ class AgentEngine(
                 bus.emit(AgentEvent.Answer(response.content))
                 messages += ChatMessage.assistant(response.content)
                 persistTurn(task, response.content, messages)
+                // The run finished with an answer rather than an error: this is exactly
+                // the evidence the learning loop needs, so it books a lesson in the
+                // background without making the user wait for it.
+                scheduleLessonLearning(step)
                 return
             }
 
@@ -232,6 +236,33 @@ class AgentEngine(
             for (i in start until arr.length()) put(arr.optJSONObject(i) ?: JSONObject())
         })
         store.writeObject("last_context.json", JSONObject().put("messages", messages.size))
+    }
+
+    /**
+     * Learns a lesson from this run after it ends.
+     *
+     * Deliberately post-hoc and non-blocking: the answer is already delivered, and the
+     * model call needed to distil a lesson must never delay or fail a user's task. It
+     * runs on its own scope so cancelling the conversation does not cancel the learning,
+     * and every failure is swallowed into a log line rather than surfaced as an error.
+     */
+    private fun scheduleLessonLearning(steps: Int) {
+        if (!settings.selfImprove || !settings.autoLearn) return
+        // A single tool call teaches nothing worth a model round-trip.
+        if (steps < 3) return
+
+        scope.launch {
+            runCatching {
+                val lesson = lessons.learnFromLastRun()
+                if (lesson != null) {
+                    bus.emit(AgentEvent.Log("تعلّمت درسًا: ${lesson.text}"))
+                    store.appendLog(logLine("lesson", lesson.text.take(300)))
+                }
+            }.onFailure { e ->
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                store.appendLog(logLine("lesson_error", e.message.orEmpty()))
+            }
+        }
     }
 
     private fun logLine(kind: String, text: String) = JSONObject().apply {

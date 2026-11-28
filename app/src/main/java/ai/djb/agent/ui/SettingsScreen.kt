@@ -40,7 +40,7 @@ fun SettingsScreen(
     onOpenUpgrade: () -> Unit = {},
     onOpenGrowth: () -> Unit = {},
     onOpenLearning: () -> Unit = {},
-    onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean) -> Unit,
+    onSaveBehaviour: (String, Autonomy, Boolean, Int, String, Boolean, Boolean) -> Unit,
     onEnableAccessibility: () -> Unit,
 ) {
     var name by remember(state.agentName) { mutableStateOf(state.agentName) }
@@ -49,6 +49,7 @@ fun SettingsScreen(
     var steps by remember(state.maxSteps) { mutableStateOf(state.maxSteps.toString()) }
     var extra by remember(state.extraInstruction) { mutableStateOf(state.extraInstruction) }
     var vision by remember(state.visionEnabled) { mutableStateOf(state.visionEnabled) }
+    var autoLearn by remember(state.autoLearn) { mutableStateOf(state.autoLearn) }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(16.dp),
@@ -137,6 +138,15 @@ fun SettingsScreen(
             }
         }
         item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("تعلّم تلقائي", style = MaterialTheme.typography.labelLarge)
+                    MonoLabel("استخلاص درس من كل مهمة ناجحة بعد انتهائها (بلا تأخير عليك).")
+                }
+                Switch(checked = autoLearn, onCheckedChange = { autoLearn = it })
+            }
+        }
+        item {
             OutlinedTextField(
                 value = steps,
                 onValueChange = { steps = it.filter(Char::isDigit).take(2) },
@@ -166,6 +176,7 @@ fun SettingsScreen(
                         steps.toIntOrNull() ?: 12,
                         extra,
                         vision,
+                        autoLearn,
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),

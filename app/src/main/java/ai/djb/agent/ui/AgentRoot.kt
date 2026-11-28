@@ -185,8 +185,8 @@ fun AgentRoot(app: AgentApp) {
                     onOpenUpgrade = { vm.refreshUpgrade(); vm.runHealthCheck(); tab = Tab.UPGRADE },
                     onOpenGrowth = { vm.refreshGrowth(); tab = Tab.GROWTH },
                     onOpenLearning = { vm.refreshLearning(); tab = Tab.LEARNING },
-                    onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision ->
-                        vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision)
+                    onSaveBehaviour = { name, autonomy, selfImprove, steps, extra, vision, autoLearn ->
+                        vm.saveBehaviour(name, autonomy, selfImprove, steps, extra, vision, autoLearn)
                         settingsVersion++
                     },
                     onEnableAccessibility = {

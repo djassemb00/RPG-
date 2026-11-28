@@ -66,7 +66,8 @@ fun LearningScreen(
                         Text("ما جمعته من تجربتي", style = MaterialTheme.typography.titleSmall)
                         Spacer(Modifier.height(6.dp))
                         MonoLabel(
-                            "دروس مستخلصة: ${state.lessons.size}\n" +
+                            "تعلّم تلقائي: ${if (state.autoLearn) "مفعّل" else "متوقف"}\n" +
+                                "دروس مستخلصة: ${state.lessons.size}\n" +
                                 "أمثلة صالحة للتدريب: ${state.examples}\n" +
                                 "متوسط طول الخطة: ${"%.1f".format(state.avgSteps)} خطوة"
                         )
@@ -141,6 +142,7 @@ fun LearningScreen(
 }
 
 data class LearningViewState(
+    val autoLearn: Boolean = true,
     val lessons: List<String> = emptyList(),
     val examples: Int = 0,
     val avgSteps: Double = 0.0,

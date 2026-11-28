@@ -82,6 +82,7 @@ data class UiState(
     val adbBusy: Boolean = false,
     val adbResult: String? = null,
     val visionEnabled: Boolean = true,
+    val autoLearn: Boolean = true,
     val backupBusy: Boolean = false,
     val backupMessage: String? = null,
     val backupCounts: BackupCounts = BackupCounts(),
@@ -149,6 +150,7 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             adbKeyFingerprint = app.adb.keyFingerprint(),
             adbLastError = app.adb.config().lastError,
             visionEnabled = s.visionEnabled,
+            autoLearn = s.autoLearn,
             providerChain = app.client.describeChain(),
             configured = app.client.hasUsableProvider(),
         )
@@ -399,6 +401,7 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         maxSteps: Int,
         extra: String,
         vision: Boolean,
+        autoLearn: Boolean,
     ) {
         app.settings.agentName = name
         app.settings.autonomy = autonomy
@@ -406,6 +409,7 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
         app.settings.maxSteps = maxSteps
         app.settings.extraInstruction = extra
         app.settings.visionEnabled = vision
+        app.settings.autoLearn = autoLearn
         userPrefsSaved()
     }
 
@@ -511,6 +515,7 @@ class AgentViewModel(private val app: AgentApp) : ViewModel() {
             val stats = app.training.stats()
             _state.value = _state.value.copy(
                 learning = _state.value.learning.copy(
+                    autoLearn = app.settings.autoLearn,
                     lessons = app.lessons.lessons().takeLast(12).map { it.text },
                     examples = stats.optInt("examples"),
                     avgSteps = stats.optDouble("avg_steps"),
